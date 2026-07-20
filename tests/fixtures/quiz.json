@@ -1,0 +1,61 @@
+{
+  "title": "光合作用小測驗",
+  "description": "國中生物：光合作用單元形成性評量",
+  "subject": "生物",
+  "gradeLevel": "國中一年級",
+  "language": "zh-TW",
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "prompt": "光合作用主要發生在植物細胞的哪個構造？",
+      "options": [
+        { "text": "粒線體", "correct": false },
+        { "text": "葉綠體", "correct": true },
+        { "text": "細胞核", "correct": false },
+        { "text": "液胞", "correct": false }
+      ],
+      "timeLimitSeconds": 30
+    },
+    {
+      "type": "true_false",
+      "prompt": "光合作用會消耗二氧化碳並產生氧氣。",
+      "options": [
+        { "text": "是", "correct": true },
+        { "text": "否", "correct": false }
+      ],
+      "timeLimitSeconds": 20
+    },
+    {
+      "type": "multiple_select",
+      "prompt": "下列哪些是光合作用的必要條件？（複選）",
+      "options": [
+        { "text": "光", "correct": true },
+        { "text": "水", "correct": true },
+        { "text": "氧氣", "correct": false },
+        { "text": "二氧化碳", "correct": true },
+        { "text": "氮氣", "correct": false },
+        { "text": "葡萄糖", "correct": false }
+      ],
+      "timeLimitSeconds": 45
+    },
+    {
+      "type": "fill_blank",
+      "prompt": "光合作用的產物是葡萄糖和＿＿。",
+      "acceptedAnswers": ["氧氣", "氧", "O2"],
+      "timeLimitSeconds": 25
+    },
+    {
+      "type": "open_ended",
+      "prompt": "請說明為什麼夜晚植物不進行光合作用，並解釋植物夜間的氣體交換情形。",
+      "timeLimitSeconds": 120
+    },
+    {
+      "type": "matching",
+      "prompt": "請將構造與功能配對。",
+      "options": [
+        { "text": "葉綠體：光合作用", "correct": true },
+        { "text": "粒線體：呼吸作用", "correct": true }
+      ]
+    }
+  ]
+}
