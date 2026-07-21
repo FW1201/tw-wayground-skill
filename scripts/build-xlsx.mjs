@@ -101,9 +101,15 @@ function mapQuestion(q, idx, warnings) {
     correct,
     time,
     image,
+    explanation: q.explanation ? plain(q.explanation) : "",
   };
 }
 
+// Header verified against the official template (2026-07-22 live check):
+// downloaded from the "試算表" tab's "下載模板" button at
+// https://cf.quizizz.com/xlsx/QuizizzSampleSpreadsheetUpdated_v2.xlsx
+// (sheet "Create a Quiz"). Column names match exactly; "Answer explanation"
+// was missing from the original port and has been added.
 export async function buildWaygroundWorkbook(quiz, outPath) {
   const warnings = [];
   const wb = new ExcelJS.Workbook();
@@ -120,7 +126,8 @@ export async function buildWaygroundWorkbook(quiz, outPath) {
     "Option 5",
     "Correct Answer",
     "Time in seconds",
-    "Image Link (optional)",
+    "Image Link",
+    "Answer explanation",
   ];
   ws.getRow(1).font = { bold: true };
 
@@ -141,6 +148,7 @@ export async function buildWaygroundWorkbook(quiz, outPath) {
       r.correct,
       r.time,
       r.image,
+      r.explanation,
     ];
     rowNum += 1;
     questionCount += 1;

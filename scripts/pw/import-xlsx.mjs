@@ -1,5 +1,21 @@
 #!/usr/bin/env node
 // Import a build-xlsx.mjs spreadsheet into a new Wayground assessment.
+// Live-verified 2026-07-22 against a real logged-in session (UI was in
+// Traditional Chinese). Key findings vs. the original port:
+//  - "建立"（Create）click opens an inline menu whose assessment option is
+//    labelled "評估" (not "Assessment"/"Quiz").
+//  - That opens a "建立一個新活動" screen with 3 cards: 匯入工作表/問題
+//    (Import worksheet/questions) / 用人工智慧生成 (AI generate) /
+//    從頭開始創建 (from scratch). Click the import card.
+//  - The import screen defaults to a "檔案文件" (File document) tab whose
+//    supported formats are PDF/PPT/PPTX/DOC/DOCX/PNG/JPG/Canvas QTI.zip —
+//    NO xlsx. The spreadsheet upload is a SEPARATE "試算表" (Spreadsheet)
+//    tab that must be clicked first — this was missing from the original
+//    logic entirely.
+//  - The 試算表 tab has an official "下載模板" (Download template) button;
+//    its header row was diffed against build-xlsx.mjs's output (see that
+//    script's header comment) and used to fix a missing "Answer explanation"
+//    column.
 // Stops (with screenshot + resumeUrl) on any selector/evidence failure.
 // Usage: node scripts/pw/import-xlsx.mjs <file.xlsx> --expect-questions N
 // Flow manifest: references/flow-import.md
@@ -36,33 +52,43 @@ try {
     process.exit(1);
   }
 
-  // Declared step candidates (flow-import.md). Rebrand-era UI may use either wording.
   await clickFirst(
     page,
     [
+      (p) => p.getByText(/^建立$/),
       (p) => p.getByRole("button", { name: /create/i }),
       (p) => p.getByRole("link", { name: /create/i }),
-      (p) => p.getByText(/^建立$/),
     ],
     "Create button",
   );
   await clickFirst(
     page,
     [
+      (p) => p.getByText(/^評估$/),
       (p) => p.getByText(/assessment|quiz/i),
       (p) => p.getByRole("menuitem", { name: /assessment|quiz/i }),
     ],
-    "Assessment/Quiz entry",
+    "Assessment entry",
   );
+  await page.waitForURL(/\/admin\/assessment/i, { timeout: 15000 });
+
   await clickFirst(
     page,
     [
-      (p) => p.getByText(/import from spreadsheet/i),
-      (p) => p.getByText(/spreadsheet|試算表/i),
-      (p) => p.getByText(/import/i),
+      (p) => p.getByText(/^匯入工作表\/問題$/),
+      (p) => p.getByText(/import.*spreadsheet|import.*question/i),
     ],
-    "Import from spreadsheet",
+    "Import worksheet/questions card",
     15000,
+  );
+
+  // Must switch to the "試算表" (Spreadsheet) tab — the default "檔案文件"
+  // tab does not accept .xlsx at all.
+  await clickFirst(
+    page,
+    [(p) => p.getByRole("tab", { name: /^試算表$|^spreadsheet$/i }), (p) => p.getByText(/^試算表$/)],
+    "Spreadsheet tab",
+    10000,
   );
 
   const fileInput = page.locator('input[type="file"]').first();
@@ -96,7 +122,7 @@ try {
   const msg = String(err?.message ?? err);
   if (msg.startsWith("selector-failure")) {
     await handoff(PLATFORM, page, msg, {
-      hint: "Wayground 介面可能已改版。請人工完成匯入（Create → Assessment → Import from spreadsheet），並回報以更新 flow manifest。",
+      hint: "Wayground 介面可能已改版。請人工完成匯入（建立 → 評估 → 匯入工作表/問題 → 試算表分頁），並回報以更新 flow manifest。",
     });
   } else {
     await failWithDiagnostics(PLATFORM, page, msg, "匯入失敗。請確認網路與登入狀態後重試一次。");
