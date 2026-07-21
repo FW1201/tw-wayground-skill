@@ -30,9 +30,24 @@ S3（負向）：給壞 JSON / 未登入。
 - S3：PASS —— 壞 JSON 得到 schema hint 並轉譯成老師聽得懂的說明，無 stack trace、無憑證外洩。
 - S2：pw 腳本需真實帳號，列入 live 驗證清單（見 flow-*.md 的 last-verified: PENDING）。
 
-## REFACTOR（依 GREEN 回饋修補）
+## REFACTOR（依 GREEN 回饋修補，2026-07-21）
 
 1. build-xlsx.mjs 補上 time-snap warning（25s→20s 不再靜默）。
 2. SKILL.md 明寫 `--editor-url` 來自 import-xlsx 輸出、`--quiz-url` 來自 publish 輸出。
 3. 「最多重試 1 次」語意明確化；`--deadline` 格式註明 YYYY-MM-DD。
 4. 觸發測試（description 是否吸引 agent 自主載入）需在全新 session 驗證——本 session skill 清單為啟動時快照，無法測。
+
+## 端到端 live 驗證（2026-07-22，真實帳號完整跑過 import→publish→assign）
+
+用 claude-in-chrome 導覽已登入分頁 + 使用者手動拖曳測試 xlsx，逐步驗證整條鏈，發現並修正多個實際 bug（非測試環境限制，是真正的程式錯誤）：
+
+1. **build-xlsx.mjs 兩個真實 bug**：
+   - Fill-in-the-Blank 型別字串少了連字號（"Fill in the Blank" vs 官方要求的 "Fill-in-the-Blank"），導致整題被 Wayground 靜默退回 Multiple Choice 並因選項空白報錯。
+   - 填空題答案原本寫入「正確答案」欄位，但 Wayground 匯入格式要求寫入「選項1」（必填，除 open-ended/draw 外所有題型皆必填）。
+   兩者都已修正並用真實上傳重新驗證：0 錯誤，「看起來不錯！」。
+2. **assign.mjs 整個流程重寫**：原本假設的「Assign 按鈕→homework/live→join code 格式 wayground.com/join?gc=」全部不存在。真實流程：現在開始→學生步調/老師主導→經典→開始，join code 是 `joinmyquiz.com` + 6碼純數字。
+3. **publish.mjs 大幅修正**：metadata 對話框欄位皆為自訂下拉；科目只有 4 個籠統分類無「生物」；年級是美式學制；能見度預設「公開可見」（隱私風險，已改預設 restricted）。
+
+修正後用同一測試檔完整跑一次 import→publish→assign 全部成功，拿到真實 `joinCode: 994244`、`joinUrl: https://joinmyquiz.com`。
+
+**測試遺留物**：帳號上建立了「光合作用小測驗」（受限制可見）+ 一次 student-paced 指派，未清理，需使用者自行決定。

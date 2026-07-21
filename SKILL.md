@@ -25,15 +25,18 @@ cd <skill-dir> && npm install && npx playwright install chromium
    ⚠️ 不要自己手刻轉換器或猜測範本格式：填空題多答案用 ` | ` 分隔、上限 5 選項、秒數只能是固定檔位，這些規則都已內建。
 2. **登入（每個新環境一次）**：`node scripts/pw/login.mjs`（timeout 設 ≥360000ms）。可見視窗，老師自行登入/MFA；session 保存在 `~/.tw-edu-skills/wayground/profile/`。
 3. **匯入**：`node scripts/pw/import-xlsx.mjs out.xlsx --expect-questions N`（N 用步驟 1 的 questionCount）。成功輸出的 `editorUrl` 供下一步使用。
-4. **發布（外部寫入，先在對話中跟老師確認名稱/科目/年級/公開性）**：
+4. **發布（外部寫入，先在對話中跟老師確認名稱/科目/年級/能見度）**：
    ```bash
-   node scripts/pw/publish.mjs --editor-url <步驟3的editorUrl> --name "..." --subject 生物 --grade 國一 --visibility private
+   node scripts/pw/publish.mjs --editor-url <步驟3的editorUrl> --name "..." --subject 科學 --grade 7年級 --visibility restricted
    ```
-5. **指派（外部寫入，先確認模式與期限）**：
+   ⚠️ **科目清單只有 4 個籠統分類**（世界語言/數學/英語/科學），沒有「生物」等細分——老師要問過會自動對映最接近的「科學」。
+   ⚠️ **年級是美式學制**（幼兒園/小學/一至十二年級），不是台灣學制——常用對應 7年級≈國一、8年級≈國二、9年級≈國三、10年級≈高一，請用這個列表跟老師確認再填。
+   ⚠️ **能見度預設「公開可見」會把測驗和答案公開在 Wayground 資源庫**——除非老師明確要求公開，一律預設 `restricted`（受限制的）。
+5. **指派（外部寫入，先確認模式：homework=學生步調／live=老師主導）**：
    ```bash
-   node scripts/pw/assign.mjs --quiz-url <步驟4的quizUrl> --mode homework --deadline 2026-07-31
+   node scripts/pw/assign.mjs --quiz-url <步驟4的quizUrl> --mode homework
    ```
-   `--deadline` 格式 `YYYY-MM-DD`（平台以老師帳號時區解讀）。成功輸出 `joinCode` 與 `shareUrl`——這是給學生的最終交付物。
+   流程：現在開始 → 學生步調/老師主導 → 選會話模式（固定用「經典」，其餘模式題數 <10 會被鎖）→ 開始。成功輸出 `joinCode`（6 碼數字）與 `joinUrl`——**注意加入網域是 `joinmyquiz.com`，不是 wayground.com**，這是給學生的最終交付物。
 
 ## 規則
 
@@ -51,3 +54,4 @@ cd <skill-dir> && npm install && npx playwright install chromium
 | `selector-failure` | Wayground 改版；交還 resumeUrl，回報以更新 `references/flow-*.md` |
 | `question-count-mismatch` | 匯入題數異常；請老師在編輯器核對 |
 | quiz.json 驗證失敗 | 對照 `scripts/lib/models.mjs` 的 Quiz schema 修正 |
+| `join-code-not-found` | 指派可能已完成；老師從畫面手動複製 joinmyquiz.com 代碼 |

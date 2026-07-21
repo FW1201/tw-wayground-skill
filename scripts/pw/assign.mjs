@@ -1,8 +1,30 @@
 #!/usr/bin/env node
-// Assign a published assessment as homework (or start Live) and capture the
-// join code / share link. Agent must confirm mode & deadline with the teacher
-// in chat BEFORE running (external write).
-// Usage: node scripts/pw/assign.mjs --quiz-url <url> --mode homework|live [--deadline "YYYY-MM-DD"]
+// Assign a published assessment as homework (student-paced) or start Live
+// (teacher-led), and capture the join code / share link.
+// Live-verified 2026-07-22 end-to-end against a real logged-in session —
+// this is a COMPLETE REWRITE of the original guessed flow, which was wrong
+// on nearly every step:
+//  1. The trigger is "現在開始" (Start now) on the quiz detail page (NOT an
+//     "Assign" button — that word doesn't appear in the UI at all). There is
+//     a separate "分配" (Assign) button that opens an "individualization
+//     adjustments" (accessibility/differentiation) flow — unrelated to
+//     homework/live assignment, not used here.
+//  2. Clicking 現在開始 opens "您想如何主持會議？" (How do you want to run
+//     this?) with two cards: "學生步調" (Student-paced) and "老師主導"
+//     (Teacher-led). Selecting one navigates to
+//     .../start_new/<quizId>?selection=student-paced (or teacher-led).
+//  3. That opens a "選擇會話模式" (Choose game mode) screen: 經典(Classic) /
+//     佔領高峰(Mountain, disabled under 10 questions) / 操場(Playground) /
+//     測驗模式(Test mode) / 團隊模式(Team mode). "經典" is the safe default.
+//  4. That opens an assignment-detail settings page (header still reads
+//     "Live") with class selection, individualization, attempt/timer
+//     settings — click the header "開始" (Start) button.
+//  5. Final screen shows the REAL join info: domain is "joinmyquiz.com" (NOT
+//     wayground.com/join!) with a 6-digit numeric code (e.g. "994244"), plus
+//     a QR code. Final URL is wayground.com/admin/activity/classic/<id>.
+// Agent must confirm mode & class/deadline expectations with the teacher in
+// chat BEFORE running (external write, students can join immediately).
+// Usage: node scripts/pw/assign.mjs --quiz-url <url> --mode homework|live
 // Flow manifest: references/flow-assign.md
 import {
   openSession,
@@ -10,7 +32,6 @@ import {
   fail,
   failWithDiagnostics,
   handoff,
-  clickFirst,
 } from "../lib/session.mjs";
 
 const PLATFORM = "wayground";
@@ -21,11 +42,10 @@ function arg(name) {
 }
 
 const quizUrl = arg("quiz-url");
-const mode = arg("mode") ?? "homework";
-const deadline = arg("deadline");
+const mode = arg("mode") ?? "homework"; // homework -> student-paced, live -> teacher-led
 
 if (!quizUrl || !["homework", "live"].includes(mode)) {
-  fail("usage", "用法：node scripts/pw/assign.mjs --quiz-url <url> --mode homework|live [--deadline YYYY-MM-DD]");
+  fail("usage", "用法：node scripts/pw/assign.mjs --quiz-url <url> --mode homework|live");
   process.exit(1);
 }
 
@@ -38,92 +58,69 @@ try {
     process.exit(1);
   }
 
-  if (mode === "homework") {
-    await clickFirst(
-      page,
-      [
-        (p) => p.getByRole("button", { name: /assign|homework|指派/i }),
-        (p) => p.getByText(/assign homework|^assign$/i),
-      ],
-      "Assign button",
-      15000,
-    );
-    if (deadline) {
-      try {
-        const dateInput = page.locator('input[type="date"], input[placeholder*="date" i]').first();
-        await dateInput.waitFor({ state: "visible", timeout: 5000 });
-        await dateInput.fill(deadline);
-      } catch {
-        // deadline picker varies; teacher confirmed default in chat
-      }
-    }
-    await clickFirst(
-      page,
-      [
-        (p) => p.getByRole("button", { name: /^(assign|continue|confirm|指派|確認)$/i }),
-        (p) => p.getByRole("button", { name: /assign/i }),
-      ],
-      "confirm assign",
-      10000,
-    );
-  } else {
-    await clickFirst(
-      page,
-      [
-        (p) => p.getByRole("button", { name: /start.*live|host|live/i }),
-        (p) => p.getByText(/start a live quiz/i),
-      ],
-      "Start live",
-      15000,
-    );
-    await clickFirst(
-      page,
-      [(p) => p.getByRole("button", { name: /^(continue|start|開始)$/i })],
-      "confirm live start",
-      10000,
-    ).catch(() => {});
-  }
+  const startNow = page.getByRole("button", { name: /^現在開始$/i }).first();
+  await startNow.waitFor({ state: "visible", timeout: 15000 });
+  await startNow.click();
 
-  // Success evidence: join code / share link appears.
-  const codeLoc = page
-    .locator('text=/join\\?gc=\\d+/, [class*="game-code"], [data-testid*="game-code"], [class*="join-code"]')
-    .first();
-  let joinCode, shareUrl;
+  const cardLabel = mode === "homework" ? /^學生步調$/ : /^老師主導$/;
+  const modeCard = page.getByText(cardLabel).first();
+  await modeCard.waitFor({ state: "visible", timeout: 10000 });
+  await modeCard.click();
+
+  // "選擇會話模式" (game mode) screen. "經典" is always enabled; others
+  // (佔領高峰 etc.) are disabled below 10 questions. Stick to Classic.
+  const classicCard = page.getByText(/^經典$/).first();
+  await classicCard.waitFor({ state: "visible", timeout: 15000 });
+  await classicCard.click();
+
+  // Assignment-detail settings page. Header button confirms and starts.
+  const headerStart = page.getByRole("button", { name: /^開始$/i }).first();
+  await headerStart.waitFor({ state: "visible", timeout: 15000 });
+  await headerStart.click();
+
+  // Final join screen: real domain is joinmyquiz.com with a numeric code.
+  const codeLoc = page.getByText(/^\d{6}$/).first();
+  let joinCode, joinUrl, domain;
   try {
     await codeLoc.waitFor({ state: "visible", timeout: 30000 });
-    const txt = (await codeLoc.textContent())?.trim() ?? "";
-    const urlMatch = txt.match(/(?:wayground|quizizz)\.com\/join\?gc=(\d+)/i);
-    const codeMatch = txt.match(/\b(\d{6,8})\b/);
-    joinCode = urlMatch?.[1] ?? codeMatch?.[1];
-    shareUrl = urlMatch ? `https://${urlMatch[0]}` : joinCode ? `https://wayground.com/join?gc=${joinCode}` : undefined;
+    joinCode = (await codeLoc.textContent())?.trim();
+    const domainLoc = page.getByText(/joinmyquiz\.com/i).first();
+    domain = (await domainLoc.textContent())?.trim() ?? "joinmyquiz.com";
+    joinUrl = `https://${domain}`;
   } catch {
     // fall through to page-wide scan
   }
   if (!joinCode) {
     const body = (await page.locator("body").innerText()).slice(0, 20000);
-    const m = body.match(/(?:wayground|quizizz)\.com\/join\?gc=(\d+)/i);
-    if (m) {
-      joinCode = m[1];
-      shareUrl = `https://${m[0]}`;
-    }
+    const codeMatch = body.match(/\b(\d{6})\b/);
+    const domainMatch = body.match(/joinmyquiz\.com/i);
+    joinCode = codeMatch?.[1];
+    domain = domainMatch?.[0] ?? "joinmyquiz.com";
+    joinUrl = joinCode ? `https://${domain}` : undefined;
   }
 
   if (joinCode) {
-    ok({ assigned: true, mode, joinCode, shareUrl, pageUrl: page.url() });
+    ok({
+      assigned: true,
+      mode,
+      joinCode,
+      joinUrl,
+      note: "學生到 joinmyquiz.com 輸入代碼即可加入，不需帳號。",
+      pageUrl: page.url(),
+    });
   } else {
     await handoff(PLATFORM, page, "join-code-not-found", {
-      hint: "指派動作可能已完成但未擷取到加入代碼。請開啟 resumeUrl 從畫面複製 join code 給學生。",
+      hint: "指派動作可能已完成但未擷取到加入代碼。請開啟 resumeUrl 從畫面複製 joinmyquiz.com 的 6 碼代碼給學生。",
     });
   }
 } catch (err) {
   const msg = String(err?.message ?? err);
-  if (msg.startsWith("selector-failure")) {
-    await handoff(PLATFORM, page, msg, {
-      hint: "無法確認指派是否完成（外部寫入狀態不明，已停止）。請開啟 resumeUrl 人工確認。",
-    });
-  } else {
-    await failWithDiagnostics(PLATFORM, page, msg, "指派失敗。請確認測驗已發布、登入狀態正常後重試一次。");
-  }
+  await failWithDiagnostics(
+    PLATFORM,
+    page,
+    msg,
+    "指派失敗。流程為：現在開始 → 學生步調/老師主導 → 經典 → 開始。請確認測驗已發布、登入狀態正常後重試一次；或人工在測驗詳情頁點「現在開始」完成。",
+  );
 } finally {
   await context.close();
 }

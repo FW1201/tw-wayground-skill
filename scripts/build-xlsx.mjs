@@ -1,6 +1,14 @@
 #!/usr/bin/env node
 // Build a Wayground/Quizizz-importable .xlsx from a quiz.json.
 // Ported from edu-agent-kit packages/adapters/wayground/src/workbook.ts @ a7eaa0f
+// Live-verified 2026-07-22 by real upload: edu-agent-kit's original
+// "Fill in the Blank" (space-separated) does NOT match Wayground's parser,
+// which silently defaults unrecognized Question Type strings to Multiple
+// Choice — producing a "缺少答案選項"/"missing answer options" error since
+// options 1-2 are left blank for fill_blank rows. Fixed to the exact string
+// from the official template's own instructions: "Fill-in-the-Blank"
+// (hyphenated). This diverges from edu-agent-kit's workbook.ts — flag this
+// upstream if porting fixes back.
 // Usage: node scripts/build-xlsx.mjs <quiz.json> <out.xlsx>
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -15,7 +23,7 @@ const TYPE_LABEL = {
   multiple_choice: "Multiple Choice",
   true_false: "Multiple Choice",
   multiple_select: "Checkbox",
-  fill_blank: "Fill in the Blank",
+  fill_blank: "Fill-in-the-Blank",
   short_answer: "Open-Ended",
   open_ended: "Open-Ended",
   poll: "Poll",
@@ -49,6 +57,13 @@ function mapQuestion(q, idx, warnings) {
       { text: "False", correct: !correctIsTrue },
     ];
   }
+  // Fill-in-the-Blank does NOT use the "正確答案"/Correct Answer column.
+  // Live-verified 2026-07-22 by real upload: Option 1 is required for every
+  // question type except Open-Ended/Draw (per the official template's own
+  // per-cell instructions), so accepted answers go into Option 1..5 instead.
+  if (q.type === "fill_blank") {
+    options = q.acceptedAnswers.map((a) => ({ text: a, correct: false }));
+  }
 
   const isChoice =
     q.type === "multiple_choice" ||
@@ -59,6 +74,10 @@ function mapQuestion(q, idx, warnings) {
   const usable = options.slice(0, MAX_OPTIONS);
   if (isChoice && usable.length < 2 && q.type !== "poll") {
     warnings.push(`Q${idx + 1}: fewer than 2 options — skipped.`);
+    return null;
+  }
+  if (q.type === "fill_blank" && usable.length < 1) {
+    warnings.push(`Q${idx + 1}: fill_blank has no accepted answers — skipped.`);
     return null;
   }
   if (options.length > MAX_OPTIONS) {
@@ -80,10 +99,9 @@ function mapQuestion(q, idx, warnings) {
       return null;
     }
     correct = idxs.join(",");
-  } else if (q.type === "fill_blank") {
-    correct = q.acceptedAnswers.map(plain).join(" | ");
   }
-  // open_ended / poll: no correct answer.
+  // fill_blank: accepted answers now live in options (see above), no
+  // Correct Answer value needed. open_ended / poll: no correct answer either.
 
   const image = q.media?.kind === "image" ? q.media.url : "";
 
