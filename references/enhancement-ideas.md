@@ -2,6 +2,8 @@
 
 以下是實際操作 Wayground 介面時看到、但本輪 skill 尚未涵蓋的功能。依「提升 agent 與平台操作吻合度」排序。
 
+> ✅ **v0.2.0 已完成**：下方 #2「Homework 期限路徑」已實作進 `assign.mjs`（`--mode homework --deadline none｜1天｜1星期｜2週`＋`--practice-mode`＋反作弊/遊戲化旗標，2026-07-22 端到端驗證，實產代碼 0657 2521）。另新增 `preflight.mjs`（前置登入檢查）與 `run.mjs`（一鍵 prepare/deliver 串接器）。AI 面板(#1)仍為 backlog。
+
 ## 高價值
 
 1. **Wayground AI 面板（第二輪已完整驗證）**——測驗詳情頁左側「人工智慧動作」點開是一個完整面板（「使用以下內容增強此測驗 WAYGROUND AI · BETA」）：

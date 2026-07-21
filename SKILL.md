@@ -15,6 +15,18 @@ cd <skill-dir> && npm install && npx playwright install chromium
 
 只在 `node_modules/` 不存在時執行。
 
+## 一鍵流程（推薦）
+
+先 `node scripts/preflight.mjs` 確認依賴已裝、老師已登入（唯一必需的人工步驟提前暴露，不會跑到一半才失敗）。再用串接器一次跑完，中間只停在一個「發布/指派前確認」的互動點：
+
+```bash
+node scripts/run.mjs quiz.json --stage prepare          # build→匯入，回傳 editorUrl + 待確認摘要
+# 把摘要給老師確認名稱/科目/期限，確認後：
+node scripts/run.mjs quiz.json --stage deliver --editor-url <editorUrl> --name "..." --mode homework --deadline 1星期
+```
+
+檔案上傳由 `setInputFiles` 全自動，**不需人工拖曳**。下方單支腳本用於需要細部控制時。
+
 ## 工作流程
 
 1. **產生匯入檔（必經）**：
@@ -32,11 +44,15 @@ cd <skill-dir> && npm install && npx playwright install chromium
    ⚠️ **科目清單只有 4 個籠統分類**（世界語言/數學/英語/科學），沒有「生物」等細分——老師要問過會自動對映最接近的「科學」。
    ⚠️ **年級是美式學制**（幼兒園/小學/一至十二年級），不是台灣學制——常用對應 7年級≈國一、8年級≈國二、9年級≈國三、10年級≈高一，請用這個列表跟老師確認再填。
    ⚠️ **能見度預設「公開可見」會把測驗和答案公開在 Wayground 資源庫**——除非老師明確要求公開，一律預設 `restricted`（受限制的）。
-5. **指派（外部寫入，先確認模式：homework=學生步調／live=老師主導）**：
+5. **指派（外部寫入，先確認模式與期限）**：
    ```bash
-   node scripts/pw/assign.mjs --quiz-url <步驟4的quizUrl> --mode homework
+   node scripts/pw/assign.mjs --quiz-url <步驟4的quizUrl> --mode homework --deadline 1星期
    ```
-   流程：現在開始 → 學生步調/老師主導 → 選會話模式（固定用「經典」，其餘模式題數 <10 會被鎖）→ 開始。成功輸出 `joinCode`（6 碼數字）與 `joinUrl`——**注意加入網域是 `joinmyquiz.com`，不是 wayground.com**，這是給學生的最終交付物。
+   三種模式（2026-07-22 重新命名，消除舊命名誤導）：
+   - `--mode homework`：**真正的作業路徑**，直接導到 `/admin/quiz/homework/<id>`，可設 `--deadline none｜1天｜1星期｜2週`（自訂日期請人工用「編輯截止日期」）、`--practice-mode practice｜accuracy｜test`，以及 `--anti-cheat`／`--no-leaderboard`／`--music`。按右上「分配」後回傳代碼。
+   - `--mode live-game`：「現在開始」的即時自主遊戲（學生步調 → 經典），無期限。
+   - `--mode live`：「現在開始」的老師主導即時課堂。
+   成功輸出 `joinCode`（6–8 碼數字，可能含空格）與 `joinUrl`——**注意加入網域是 `joinmyquiz.com`，不是 wayground.com**，這是給學生的最終交付物。
 
 ## 規則
 
