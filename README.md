@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.png" width="88" alt="Wayground logo"></p>
+
 # tw-wayground-skill
 
 > ⚠️ **非官方工具**：本套件**不是** Wayground／Quizizz 官方產品，也**非**其認可的整合。它以 Playwright 自動操作官方網頁 UI（因為 Wayground 無建立測驗的公開 API），受 Wayground 服務條款約束。請以**老師本人帳號**、由本人完成登入/MFA，操作自己的內容，風險自負。若 Wayground 日後提供官方 API，應優先改用官方路徑。
@@ -56,6 +58,7 @@ node scripts/run.mjs quiz.json --stage deliver \
 ## 自動化邊界（ToS 風險控管）
 
 - 一律可見（headed）瀏覽器、老師本人帳號；登入/MFA/CAPTCHA 親自完成。
+- **需在本機、有螢幕的互動式 agent session 執行**（Claude Code/Codex CLI/OpenCode 本機終端機皆可）；雲端背景任務/遠端無頭 sandbox/CI 無法顯示瀏覽器視窗，不適用。
 - 檔案上傳由程式自動完成（`setInputFiles`），只上傳老師自己的檔案。
 - 發布與指派前，agent 必須在對話中取得老師明確確認。
 - 選擇器或成功證據比對失敗 → 零重試、截圖、停止並交還人工（`resumeUrl`）。

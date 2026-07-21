@@ -15,6 +15,8 @@ cd <skill-dir> && npm install && npx playwright install chromium
 
 只在 `node_modules/` 不存在時執行。
 
+⚠️ **執行環境**：本 skill 開啟**可見（headed）瀏覽器**供老師登入，需在**本機、有螢幕的互動式 agent session**執行（Claude Code CLI/Desktop、Codex CLI、OpenCode 終端機皆可）。**雲端背景任務/遠端無頭 sandbox/CI（如 Codex Cloud tasks）無法顯示瀏覽器視窗，登入步驟會卡住或失敗**——請改在本機互動式 session 執行。
+
 ## 一鍵流程（推薦）
 
 先 `node scripts/preflight.mjs` 確認依賴已裝、老師已登入（唯一必需的人工步驟提前暴露，不會跑到一半才失敗）。再用串接器一次跑完，中間只停在一個「發布/指派前確認」的互動點：
