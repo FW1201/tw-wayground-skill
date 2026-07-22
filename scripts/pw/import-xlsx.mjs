@@ -28,10 +28,18 @@ import {
   failWithDiagnostics,
   handoff,
   clickFirst,
+  gotoReady,
+  inspectAuth,
+  authManifest,
 } from "../lib/session.mjs";
 
 const PLATFORM = "wayground";
 const DASHBOARD = /(wayground|quizizz)\.com\/(admin|dashboard)/;
+const AUTH = authManifest({
+  loginUrls: [/wayground\.com\/login/i, /quizizz\.com\/login/i],
+  authenticatedUrlPatterns: [DASHBOARD],
+  authenticatedLocators: [(p) => p.getByText(/建立|create|assessment|測驗/i)],
+});
 
 const args = process.argv.slice(2);
 const file = args[0];
@@ -45,8 +53,9 @@ if (!file || !existsSync(file)) {
 
 const { context, page } = await openSession(PLATFORM);
 try {
-  await page.goto("https://wayground.com/admin", { waitUntil: "domcontentloaded" });
-  if (!DASHBOARD.test(page.url())) {
+  await gotoReady(page, "https://wayground.com/admin", { timeoutMs: 30000 });
+  const auth = await inspectAuth(page, AUTH);
+  if (auth.state !== "authenticated") {
     fail("not-logged-in", "尚未登入 Wayground。請先執行 node scripts/pw/login.mjs。");
     await context.close();
     process.exit(1);

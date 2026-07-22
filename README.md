@@ -68,6 +68,26 @@ node scripts/run.mjs quiz.json --stage deliver \
 
 各流程的入口 URL、步驟、成功證據記錄在 `references/flow-*.md`，已以真實帳號驗證者蓋有 `last-verified` 時戳。
 
+## Browser Core v1
+
+Playwright flows now use an isolated per-platform profile lock, a URL + DOM
+authentication check, condition-based waits, run-state journals, classified
+selector failures, and local redacted diagnostics. A failed or ambiguous
+external write returns `resumeUrl` and must not be retried automatically.
+
+Run local checks with:
+
+```bash
+npm test
+npm run check:browser-core
+```
+
+Validation boundaries and the latest readonly canary result are recorded in
+`docs/browser-core-validation.md`.
+
+Computer Use is a manual fallback for login/MFA/CAPTCHA or selector drift; it
+does not replace deterministic success evidence or external-write gates.
+
 ## License
 
 MIT

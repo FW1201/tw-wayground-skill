@@ -14,4 +14,5 @@
 - fallback artifact: build-xlsx.mjs 產生的 .xlsx（老師可手動走「試算表」分頁上傳）
 - trace policy: 失敗只留本機截圖於 `~/.tw-edu-skills/wayground/diagnostics/`
 - **last-verified: 2026-07-22（步驟 1-4 已用真實帳號驗證；步驟 5 上傳後的預覽畫面因測試環境無法上傳檔案而未實測，仍視為 provisional）**
+- capability-status: provisional（spreadsheet tab switching verified；XLSX preview-count live evidence pending）
 - 附帶發現：官方範本比原移植版多一欄「Answer explanation」，已同步修正 `build-xlsx.mjs`（見該檔案標頭註記）

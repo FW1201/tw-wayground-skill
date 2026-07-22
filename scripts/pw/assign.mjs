@@ -37,6 +37,7 @@ import {
   fail,
   failWithDiagnostics,
   handoff,
+  assertPlatformAuthenticated,
 } from "../lib/session.mjs";
 
 const PLATFORM = "wayground";
@@ -92,11 +93,7 @@ try {
     // more robust than clicking a "分配" button on the detail page.
     const homeworkUrl = quizUrl.replace(/\/admin\/quiz\/(?!homework\/)/, "/admin/quiz/homework/");
     await page.goto(homeworkUrl, { waitUntil: "domcontentloaded" });
-    if (/\/login/.test(page.url())) {
-      fail("not-logged-in", "尚未登入。請先執行 node scripts/pw/login.mjs。");
-      await context.close();
-      process.exit(1);
-    }
+    await assertPlatformAuthenticated(page, PLATFORM);
 
     // 1) Practice mode card (default 練習).
     const practiceMode = arg("practice-mode") ?? "practice";
@@ -164,11 +161,7 @@ try {
 
   // mode === "live-game" | "live": the "現在開始" path.
   await page.goto(quizUrl, { waitUntil: "domcontentloaded" });
-  if (/\/login/.test(page.url())) {
-    fail("not-logged-in", "尚未登入。請先執行 node scripts/pw/login.mjs。");
-    await context.close();
-    process.exit(1);
-  }
+  await assertPlatformAuthenticated(page, PLATFORM);
 
   const startNow = page.getByRole("button", { name: /^現在開始$/i }).first();
   await startNow.waitFor({ state: "visible", timeout: 15000 });

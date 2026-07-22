@@ -22,7 +22,8 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { platformDir } from "./lib/session.mjs";
+import { platformDir, createRunState, inputFingerprint } from "./lib/session.mjs";
+import { createTrackedRunner } from "./lib/browser-core/orchestrator.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLATFORM = "wayground";
@@ -37,6 +38,9 @@ function has(name) {
 function out(obj) {
   console.log(JSON.stringify(obj));
 }
+
+let runState;
+const runTracked = createTrackedRunner({ here: HERE, platform: PLATFORM, getState: () => runState });
 
 // Run a sibling script with node, return the parsed last JSON line of stdout.
 function runScript(relPath, args) {
@@ -82,13 +86,14 @@ try {
   if (stage === "prepare") {
     const xlsxPath = path.join(platformDir(PLATFORM, "tmp"), `quiz-${Date.now()}.xlsx`);
 
-    const built = runScript("build-xlsx.mjs", [quizPath, xlsxPath]);
+    runState = await createRunState(PLATFORM, { id: "wayground-prepare", version: 1 }, inputFingerprint(quiz));
+    const built = await runTracked("build-xlsx", "build-xlsx.mjs", [quizPath, xlsxPath]);
     if (!built.ok) {
       out({ ok: false, stage, step: "build-xlsx", ...built });
       process.exit(1);
     }
 
-    const imported = runScript("pw/import-xlsx.mjs", [
+    const imported = await runTracked("import-xlsx", "pw/import-xlsx.mjs", [
       xlsxPath,
       "--expect-questions",
       String(built.questionCount ?? quiz.questions?.length ?? ""),
@@ -101,6 +106,7 @@ try {
     out({
       ok: true,
       stage: "prepare",
+      runId: runState.runId,
       editorUrl: imported.editorUrl,
       title: quiz.title,
       questionCount: built.questionCount,
@@ -129,7 +135,8 @@ try {
     const v = arg(k);
     if (v) publishArgs.push(`--${k}`, v);
   }
-  const published = runScript("pw/publish.mjs", publishArgs);
+  runState = await createRunState(PLATFORM, { id: "wayground-deliver", version: 1 }, inputFingerprint({ editorUrl, name, mode: arg("mode") }));
+  const published = await runTracked("publish", "pw/publish.mjs", publishArgs);
   if (!published.ok) {
     out({ ok: false, stage, step: "publish", ...published });
     process.exit(1);
@@ -144,7 +151,7 @@ try {
   for (const flag of ["anti-cheat", "no-leaderboard", "music"]) {
     if (has(flag)) assignArgs.push(`--${flag}`);
   }
-  const assigned = runScript("pw/assign.mjs", assignArgs);
+  const assigned = await runTracked("assign", "pw/assign.mjs", assignArgs);
   if (!assigned.ok) {
     out({ ok: false, stage, step: "assign", quizUrl: published.quizUrl, ...assigned });
     process.exit(1);
@@ -153,6 +160,7 @@ try {
   out({
     ok: true,
     stage: "deliver",
+    runId: runState.runId,
     quizUrl: published.quizUrl,
     mode: assigned.mode,
     joinCode: assigned.joinCode,

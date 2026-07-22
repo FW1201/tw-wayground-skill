@@ -34,6 +34,7 @@ import {
   fail,
   failWithDiagnostics,
   handoff,
+  assertPlatformAuthenticated,
 } from "../lib/session.mjs";
 
 const PLATFORM = "wayground";
@@ -74,11 +75,7 @@ async function selectDropdown(page, labelText, optionRegex) {
 const { context, page } = await openSession(PLATFORM);
 try {
   await page.goto(editorUrl, { waitUntil: "domcontentloaded" });
-  if (/\/login/.test(page.url())) {
-    fail("not-logged-in", "尚未登入。請先執行 node scripts/pw/login.mjs。");
-    await context.close();
-    process.exit(1);
-  }
+  await assertPlatformAuthenticated(page, PLATFORM);
 
   const publishBtn = page.getByRole("button", { name: /^發布$/ }).first();
   await publishBtn.waitFor({ state: "visible", timeout: 15000 });

@@ -22,20 +22,31 @@ if (!existsSync(new URL("../node_modules/playwright", import.meta.url))) {
   process.exit(1);
 }
 
-const { openSession } = await import("./lib/session.mjs");
+const { openSession, inspectAuth, gotoReady, authManifest } = await import("./lib/session.mjs");
 
 const PLATFORM = "wayground";
 const DASHBOARD = /(wayground|quizizz)\.com\/(admin|dashboard)/;
+const AUTH = authManifest({
+  entryUrl: "https://wayground.com/admin",
+  loginUrls: [/wayground\.com\/login/i, /quizizz\.com\/login/i],
+  authenticatedUrlPatterns: [DASHBOARD],
+  authenticatedLocators: [(p) => p.getByText(/建立|create|assessment|測驗/i)],
+});
 
-const { context, page } = await openSession(PLATFORM);
+let context;
+let page;
 try {
-  await page.goto("https://wayground.com/admin", { waitUntil: "domcontentloaded" });
-  const loggedIn = DASHBOARD.test(page.url()) && !/\/login/i.test(page.url());
+  ({ context, page } = await openSession(PLATFORM));
+  await gotoReady(page, "https://wayground.com/admin", { timeoutMs: 30000 });
+  const auth = await inspectAuth(page, AUTH);
+  const loggedIn = auth.state === "authenticated";
   if (loggedIn) {
     console.log(
       JSON.stringify({
         ok: true,
         loggedIn: true,
+        authState: auth.state,
+        checkedUrl: auth.url,
         note: "已登入，可直接執行 node scripts/run.mjs <quiz.json> --stage prepare。",
       }),
     );
@@ -45,6 +56,8 @@ try {
         ok: false,
         error: "not-logged-in",
         loggedIn: false,
+        authState: auth.state,
+        checkedUrl: auth.url,
         hint: "尚未登入 Wayground。請先執行 node scripts/pw/login.mjs，由老師本人在開啟的視窗完成登入/MFA，再重跑 preflight。",
       }),
     );
@@ -60,5 +73,5 @@ try {
   );
   process.exitCode = 1;
 } finally {
-  await context.close();
+  await context?.close();
 }
