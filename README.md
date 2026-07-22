@@ -2,97 +2,39 @@
 
 # tw-wayground-skill
 
-> ⚠️ **非官方工具**：本套件**不是** Wayground／Quizizz 官方產品，也**非**其認可的整合。它以 Playwright 自動操作官方網頁 UI（因為 Wayground 無建立測驗的公開 API），受 Wayground 服務條款約束。請以**老師本人帳號**、由本人完成登入/MFA，操作自己的內容，風險自負。若 Wayground 日後提供官方 API，應優先改用官方路徑。
+> ⚠️ **非官方工具**：本套件**不是** Wayground／Quizizz 官方產品，也**非**其認可的整合。Wayground 沒有建立測驗的公開 API，本套件只產生老師可以直接上傳的官方匯入試算表，不做任何瀏覽器自動化或登入。
 
-台灣 K-12 教師用的 Wayground（原 Quizizz）agent skill：一句話就能把結構化測驗 JSON 一路做到「產生官方匯入試算表 → 匯入 → 發布 → 指派作業（含真實期限）→ 回傳學生加入代碼」。
+台灣 K-12 教師用的 Wayground（原 Quizizz）agent skill：一句話把結構化測驗 JSON 轉成 Wayground 官方匯入試算表 + 匯入就緒報告，老師拿著檔案自行到 wayground.com 匯入、發布、指派。
 
 自 [edu-agent-kit](https://github.com/FW1201/edu-agent-kit) 的 Wayground adapter 獨立而來（來源 commit `a7eaa0f`）。
 
 ## 這套 skill 能做什麼
 
-老師只要把測驗題目給 agent，agent 就能：
-1. 產生 Wayground 官方格式的匯入試算表（`.xlsx`）。
-2. 自動上傳匯入成新測驗（**檔案上傳全自動，不需人工拖曳**）。
-3. 填 metadata 並發布。
-4. 指派作業並設定**期限**，回傳 `joinmyquiz.com` + 加入代碼給學生。
+老師把測驗題目給 agent，agent 產生 Wayground 官方格式的匯入試算表（`.xlsx`），附上一份**匯入就緒報告**（每題 ready/skipped 狀態、media/長度/多空格等提醒），老師拿著檔案登入 Wayground 自行匯入、發布、指派。
 
-中間只有**兩個**需要人的地方：**登入**（老師本人在視窗完成一次）、**發布/指派前的確認**（agent 會把要送出的內容摘要給老師點頭）。
-
-## 快速上手（一鍵流程，推薦）
+## 快速上手
 
 ```bash
-cd <skill-dir> && npm install                    # 首次
-npm run browser:start                            # 啟動教育平台專用「正常 Chrome」
-npm run browser:status                           # 確認 CDP 已可連線
-node scripts/pw/login.mjs                        # 第一次開登入頁後立即 handoff
-# 在保持開啟的正常 Chrome 完成 Google 登入／MFA，然後：
-node scripts/pw/login.mjs && node scripts/preflight.mjs
-node scripts/run.mjs quiz.json --stage prepare   # build→匯入，回傳 editorUrl + 待確認摘要
-# ⇧ agent 把摘要給老師確認名稱/科目/期限…
-node scripts/run.mjs quiz.json --stage deliver \
-  --editor-url <上一步的 editorUrl> --name "光合作用小測驗" \
-  --mode homework --deadline 1星期                # 發布→指派，回傳 joinCode
+cd <skill-dir> && npm install                             # 首次
+node scripts/build-xlsx.mjs quiz.json out.xlsx
 ```
 
-## 自然指令範例（老師怎麼講，agent 就懂）
+## 自然指令範例
 
 | 老師說 | 觸發 |
 |---|---|
-| 「把這 10 題做成 Wayground 測驗，**指派作業給我、期限一週**，回連結」 | `run.mjs … --mode homework --deadline 1星期` |
-| 「這份小考現在就開始，學生用手機加入」 | `assign.mjs --mode live-game` |
-| 「我要在課堂上主持這份測驗」 | `assign.mjs --mode live` |
-| 「先幫我做好測驗、發布就好，先別指派」 | `run.mjs … --stage prepare` + `publish.mjs` |
+| 「把這 10 題轉成 Wayground 匯入試算表」 | `build-xlsx.mjs quiz.json out.xlsx` |
+| 「這份試算表能直接匯入嗎？」 | 看 stdout 的 `warnings` + `readinessReportPath` |
 
 ## 功能總覽
 
 | 腳本 | 用途 | 輸入 | 輸出 |
 |---|---|---|---|
-| `scripts/preflight.mjs` | 前置檢查（依賴/登入） | — | `{loggedIn}` |
-| `scripts/run.mjs` | **一鍵串接器**（prepare/deliver 兩階段） | `quiz.json` | editorUrl / joinCode |
-| `scripts/build-xlsx.mjs` | 產生官方匯入試算表 | `quiz.json` `out.xlsx` | 檔案路徑 + warnings |
-| `scripts/pw/login.mjs` | 可見視窗登入（本人完成） | — | 登入狀態 |
-| `scripts/pw/import-xlsx.mjs` | 自動匯入試算表到新測驗 | `<file.xlsx>` | editorUrl |
-| `scripts/pw/publish.mjs` | 填 metadata 並發布 | `--editor-url --name …` | quizUrl |
-| `scripts/pw/assign.mjs` | 指派：`homework`(含期限)/`live-game`/`live` | `--quiz-url --mode …` | joinCode + joinUrl |
+| `scripts/build-xlsx.mjs` | 產生官方匯入試算表 + 匯入就緒報告 | `quiz.json` `out.xlsx` | 檔案路徑 + warnings + readinessReportPath |
 
-指派模式說明：`--mode homework` 走真正的作業路徑（`/admin/quiz/homework/`），支援 `--deadline none｜1天｜1星期｜2週`、`--practice-mode practice｜accuracy｜test`，以及 `--anti-cheat`／`--no-leaderboard`／`--music`；`--mode live-game` 是「現在開始」的即時自主遊戲；`--mode live` 是老師主導的即時課堂。
+## 為什麼沒有瀏覽器自動化
 
-## 自動化邊界（ToS 風險控管）
-
-- 使用教育平台專用正常 Chrome profile；老師本人完成登入/MFA/CAPTCHA。
-- **需在本機、有螢幕的互動式 agent session 執行**（Claude Code/Codex CLI/OpenCode 本機終端機皆可）；雲端背景任務/遠端無頭 sandbox/CI 無法顯示瀏覽器視窗，不適用。
-- 檔案上傳由程式自動完成（`setInputFiles`），只上傳老師自己的檔案。
-- 發布與指派前，agent 必須在對話中取得老師明確確認。
-- 選擇器或成功證據比對失敗 → 零重試、截圖、停止並交還人工（`resumeUrl`）。
-- Cookies 只留在本機專用 Chrome profile，不序列化、不複製、不進 agent context。
-
-## Playwright 流程狀態
-
-各流程的入口 URL、步驟、成功證據記錄在 `references/flow-*.md`，已以真實帳號驗證者蓋有 `last-verified` 時戳。
-
-## Browser Core v2：正常 Chrome + CDP
-
-Playwright 預設透過 CDP 連接使用者啟動的教育平台專用正常 Chrome；Google OAuth、
-MFA、CAPTCHA 都在 Skill detach 後由老師本人完成。Flows still use a URL + DOM
-authentication check, condition-based waits, run-state journals, classified
-selector failures, and local redacted diagnostics. A failed or ambiguous
-external write returns `resumeUrl` and must not be retried automatically.
-
-環境變數：`TW_EDU_CDP_URL` 可指定 endpoint；`TW_EDU_CHROME_PATH` 可指定 Chrome；
-只有非 Google 帳號的明確需求才可設定 `TW_EDU_BROWSER_MODE=playwright`。
-
-Run local checks with:
-
-```bash
-npm test
-npm run check:browser-core
-```
-
-Validation boundaries and the latest readonly canary result are recorded in
-`docs/browser-core-validation.md`.
-
-Computer Use is a manual fallback for login/MFA/CAPTCHA or selector drift; it
-does not replace deterministic success evidence or external-write gates.
+這套 skill 原本用 Playwright 自動化登入＋匯入＋發布＋指派整條鏈。Google OAuth 會拒絕 Playwright 自動化的瀏覽器，之後改用連接使用者另外啟動的「正常 Chrome」（CDP）解決登入問題；但即便如此，**選擇器驅動的 UI 自動化本身仍然不穩定**。現在改成只產生最大程度符合 Wayground 官方匯入規範的檔案，平台 UI 的最後一哩路（匯入、發布、指派）交給老師，不再嘗試自動操作瀏覽器。
 
 ## License
 

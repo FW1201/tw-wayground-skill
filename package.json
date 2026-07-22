@@ -1,22 +1,18 @@
 {
   "name": "tw-wayground-skill",
-  "version": "0.1.0",
-  "description": "Agent skill: build, import, publish and assign Wayground (formerly Quizizz) quizzes for Taiwanese K-12 teachers.",
+  "version": "0.3.0",
+  "description": "Agent skill: build a Wayground (formerly Quizizz) official import spreadsheet with an import-readiness report for Taiwanese K-12 teachers. No browser automation.",
   "type": "module",
   "license": "MIT",
   "private": true,
   "scripts": {
-    "browser:start": "node scripts/browser/start-chrome.mjs",
-    "browser:status": "node scripts/browser/check-cdp.mjs",
-    "test": "node --test tests/*.test.mjs",
-    "check:browser-core": "node scripts/check-browser-core-sync.mjs"
+    "test": "node --test tests/*.test.mjs"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
     "exceljs": "4.4.0",
-    "playwright": "1.54.1",
     "zod": "3.25.76"
   }
 }
