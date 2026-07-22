@@ -17,6 +17,11 @@ export async function inspectAuth(page, manifest) {
   const url = page.url();
   if (!url || url === "about:blank") return { state: "unknown", url };
 
+  if (/accounts\.google\.com\/(?:v\d+\/)?signin\/rejected/i.test(url) ||
+      await visible(page.getByText(/目前無法登入帳戶|couldn['’]t sign you in|browser or app may not be secure/i).first())) {
+    return { state: "user-action-required", reason: "oauth-browser-rejected", url: redactUrl(url) };
+  }
+
   if (await visible(page.getByText(manifest.challengeText ?? /captcha|verify you are human|two-factor|驗證碼|雙重驗證/i).first())) {
     return { state: "user-action-required", reason: "challenge", url: redactUrl(url) };
   }
@@ -34,17 +39,33 @@ export async function inspectAuth(page, manifest) {
   return { state: "unknown", url: redactUrl(url) };
 }
 
+export async function inspectAuthAcrossPages(context, preferredPage, manifest) {
+  const pages = [preferredPage, ...context.pages().filter((page) => page !== preferredPage)].filter(Boolean);
+  const inspected = [];
+  for (const page of pages) inspected.push({ page, ...(await inspectAuth(page, manifest)) });
+  const priority = ["authenticated", "user-action-required", "expired", "login-required", "checking", "unknown"];
+  for (const state of priority) {
+    const matches = inspected.filter((item) => item.state === state);
+    if (!matches.length) continue;
+    if (state === "user-action-required") {
+      return matches.find((item) => item.reason === "oauth-browser-rejected") ?? matches[0];
+    }
+    return matches[0];
+  }
+  return { page: preferredPage, state: "unknown", url: redactUrl(preferredPage?.url?.()) };
+}
+
 export async function waitForAuthenticated(context, page, manifest, timeoutMs = 300000) {
   const deadline = Date.now() + timeoutMs;
   let last;
   while (Date.now() < deadline) {
-    for (const candidate of [page, ...context.pages().filter((item) => item !== page)]) {
-      const inspected = await inspectAuth(candidate, manifest);
-      last = inspected;
-      if (inspected.state === "authenticated") return { page: candidate, ...inspected };
-      if (inspected.state === "user-action-required") {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
+    const inspected = await inspectAuthAcrossPages(context, page, manifest);
+    last = inspected;
+    if (inspected.state === "authenticated") return inspected;
+    if (inspected.reason === "oauth-browser-rejected") {
+      const error = new Error("oauth-browser-rejected");
+      error.code = "oauth-browser-rejected";
+      throw error;
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }

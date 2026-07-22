@@ -6,6 +6,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
+    "browser:start": "node scripts/browser/start-chrome.mjs",
+    "browser:status": "node scripts/browser/check-cdp.mjs",
     "test": "node --test tests/*.test.mjs",
     "check:browser-core": "node scripts/check-browser-core-sync.mjs"
   },

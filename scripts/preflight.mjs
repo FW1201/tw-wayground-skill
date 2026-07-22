@@ -16,13 +16,13 @@ if (!existsSync(new URL("../node_modules/playwright", import.meta.url))) {
       ok: false,
       error: "needs-install",
       needsInstall: true,
-      hint: "尚未安裝依賴。請先執行：cd <skill-dir> && npm install && npx playwright install chromium。",
+      hint: "尚未安裝依賴。請先執行：cd <skill-dir> && npm install。",
     }),
   );
   process.exit(1);
 }
 
-const { openSession, inspectAuth, gotoReady, authManifest } = await import("./lib/session.mjs");
+const { openSession, inspectAuthAcrossPages, gotoReady, authManifest } = await import("./lib/session.mjs");
 
 const PLATFORM = "wayground";
 const DASHBOARD = /(wayground|quizizz)\.com\/(admin|dashboard)/;
@@ -35,10 +35,12 @@ const AUTH = authManifest({
 
 let context;
 let page;
+let session;
 try {
-  ({ context, page } = await openSession(PLATFORM));
+  session = await openSession(PLATFORM, { mode: "cdp" });
+  ({ context, page } = session);
   await gotoReady(page, "https://wayground.com/admin", { timeoutMs: 30000 });
-  const auth = await inspectAuth(page, AUTH);
+  const auth = await inspectAuthAcrossPages(context, page, AUTH);
   const loggedIn = auth.state === "authenticated";
   if (loggedIn) {
     console.log(
@@ -46,6 +48,8 @@ try {
         ok: true,
         loggedIn: true,
         authState: auth.state,
+        browserMode: session.browserMode,
+        cdpEndpoint: session.cdpEndpoint,
         checkedUrl: auth.url,
         note: "已登入，可直接執行 node scripts/run.mjs <quiz.json> --stage prepare。",
       }),
@@ -57,6 +61,8 @@ try {
         error: "not-logged-in",
         loggedIn: false,
         authState: auth.state,
+        browserMode: session.browserMode,
+        cdpEndpoint: session.cdpEndpoint,
         checkedUrl: auth.url,
         hint: "尚未登入 Wayground。請先執行 node scripts/pw/login.mjs，由老師本人在開啟的視窗完成登入/MFA，再重跑 preflight。",
       }),
@@ -68,7 +74,9 @@ try {
     JSON.stringify({
       ok: false,
       error: String(err?.message ?? err),
-      hint: "無法連到 Wayground。請確認網路後重試一次。",
+      hint: err?.code === "cdp-unavailable"
+        ? "找不到教育平台專用正常 Chrome。請先執行 npm run browser:start。"
+        : "無法連到 Wayground。請確認正常 Chrome 與網路後重試一次。",
     }),
   );
   process.exitCode = 1;

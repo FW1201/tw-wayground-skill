@@ -28,7 +28,10 @@ export function redactUrl(value) {
   if (!value) return value;
   try {
     const url = new URL(value);
-    for (const key of ["token", "access_token", "id_token", "code", "state", "session", "auth"]) {
+    for (const key of [
+      "token", "access_token", "id_token", "code", "state", "session", "auth",
+      "login_hint", "client_id", "continue", "redirect_uri", "scope", "app_domain", "approval_prompt", "access_type",
+    ]) {
       url.searchParams.delete(key);
     }
     url.hash = "";

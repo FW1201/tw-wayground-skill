@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const required = ["auth.mjs", "contracts.mjs", "diagnostics.mjs", "navigation.mjs", "orchestrator.mjs", "run-state.mjs", "selectors.mjs", "session-paths.mjs", "session.mjs"];
+const required = ["auth.mjs", "chrome-launch.mjs", "contracts.mjs", "diagnostics.mjs", "navigation.mjs", "orchestrator.mjs", "run-state.mjs", "selectors.mjs", "session-paths.mjs", "session.mjs"];
 const missing = required.filter((name) => !existsSync(path.join(root, "scripts", "lib", "browser-core", name)));
 const scriptRoot = path.join(root, "scripts");
 const mjsFiles = [];

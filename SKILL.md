@@ -10,16 +10,18 @@ description: Use when a teacher wants quiz content turned into a Wayground (form
 ## 首次使用
 
 ```bash
-cd <skill-dir> && npm install && npx playwright install chromium
+cd <skill-dir> && npm install
+npm run browser:start
+npm run browser:status
 ```
 
 只在 `node_modules/` 不存在時執行。
 
-⚠️ **執行環境**：本 skill 開啟**可見（headed）瀏覽器**供老師登入，需在**本機、有螢幕的互動式 agent session**執行（Claude Code CLI/Desktop、Codex CLI、OpenCode 終端機皆可）。**雲端背景任務/遠端無頭 sandbox/CI（如 Codex Cloud tasks）無法顯示瀏覽器視窗，登入步驟會卡住或失敗**——請改在本機互動式 session 執行。
+⚠️ **執行環境**：本 skill 透過 CDP 連接由使用者啟動的教育平台專用正常 Chrome。Google OAuth/MFA/CAPTCHA 必須由老師在 Skill detach 後親自完成；不得在 Playwright automated Chromium 登入。
 
 ## 一鍵流程（推薦）
 
-先 `node scripts/preflight.mjs` 確認依賴已裝、老師已登入（唯一必需的人工步驟提前暴露，不會跑到一半才失敗）。再用串接器一次跑完，中間只停在一個「發布/指派前確認」的互動點：
+先執行 `npm run browser:start`；第一次 login 會開登入頁後立即 handoff。老師登入後重跑 login/preflight，再用串接器執行：
 
 ```bash
 node scripts/run.mjs quiz.json --stage prepare          # build→匯入，回傳 editorUrl + 待確認摘要
@@ -37,7 +39,7 @@ node scripts/run.mjs quiz.json --stage deliver --editor-url <editorUrl> --name "
    ```
    輸出 JSON 含 `questionCount` 與 `warnings`（跳過的題型、被裁掉的選項）——**一定要把 warnings 轉述給老師**。
    ⚠️ 不要自己手刻轉換器或猜測範本格式：填空題多答案用 ` | ` 分隔、上限 5 選項、秒數只能是固定檔位，這些規則都已內建。
-2. **登入（每個新環境一次）**：`node scripts/pw/login.mjs`（timeout 設 ≥360000ms）。可見視窗，老師自行登入/MFA；session 保存在 `~/.tw-edu-skills/wayground/profile/`。
+2. **登入（每個新環境一次）**：`npm run browser:start` → `node scripts/pw/login.mjs` → 老師在專用正常 Chrome 完成 OAuth/MFA → 重跑 login/preflight。Session 留在 `~/.tw-edu-skills/browser/chrome-profile/`。
 3. **匯入**：`node scripts/pw/import-xlsx.mjs out.xlsx --expect-questions N`（N 用步驟 1 的 questionCount）。成功輸出的 `editorUrl` 供下一步使用。
 4. **發布（外部寫入，先在對話中跟老師確認名稱/科目/年級/能見度）**：
    ```bash
@@ -69,6 +71,8 @@ node scripts/run.mjs quiz.json --stage deliver --editor-url <editorUrl> --name "
 | 症狀 | 處理 |
 |---|---|
 | `not-logged-in` | 先跑 `scripts/pw/login.mjs` |
+| `cdp-unavailable` | 先跑 `npm run browser:start`，保持該正常 Chrome 開啟 |
+| `oauth-browser-rejected` | 關閉舊 automated Chromium；在專用正常 Chrome 重新登入 |
 | `selector-failure` | Wayground 改版；交還 resumeUrl，回報以更新 `references/flow-*.md` |
 | `question-count-mismatch` | 匯入題數異常；請老師在編輯器核對 |
 | quiz.json 驗證失敗 | 對照 `scripts/lib/models.mjs` 的 Quiz schema 修正 |

@@ -21,10 +21,12 @@
 ## 快速上手（一鍵流程，推薦）
 
 ```bash
-cd <skill-dir> && npm install && npx playwright install chromium   # 首次
-
-node scripts/preflight.mjs                       # 先確認：裝好了嗎？登入了嗎？
-node scripts/pw/login.mjs                        # 若未登入，老師本人在視窗登入一次
+cd <skill-dir> && npm install                    # 首次
+npm run browser:start                            # 啟動教育平台專用「正常 Chrome」
+npm run browser:status                           # 確認 CDP 已可連線
+node scripts/pw/login.mjs                        # 第一次開登入頁後立即 handoff
+# 在保持開啟的正常 Chrome 完成 Google 登入／MFA，然後：
+node scripts/pw/login.mjs && node scripts/preflight.mjs
 node scripts/run.mjs quiz.json --stage prepare   # build→匯入，回傳 editorUrl + 待確認摘要
 # ⇧ agent 把摘要給老師確認名稱/科目/期限…
 node scripts/run.mjs quiz.json --stage deliver \
@@ -57,23 +59,27 @@ node scripts/run.mjs quiz.json --stage deliver \
 
 ## 自動化邊界（ToS 風險控管）
 
-- 一律可見（headed）瀏覽器、老師本人帳號；登入/MFA/CAPTCHA 親自完成。
+- 使用教育平台專用正常 Chrome profile；老師本人完成登入/MFA/CAPTCHA。
 - **需在本機、有螢幕的互動式 agent session 執行**（Claude Code/Codex CLI/OpenCode 本機終端機皆可）；雲端背景任務/遠端無頭 sandbox/CI 無法顯示瀏覽器視窗，不適用。
 - 檔案上傳由程式自動完成（`setInputFiles`），只上傳老師自己的檔案。
 - 發布與指派前，agent 必須在對話中取得老師明確確認。
 - 選擇器或成功證據比對失敗 → 零重試、截圖、停止並交還人工（`resumeUrl`）。
-- Cookies 只存本機 Chromium profile，不序列化、不輸出、不進 agent context。
+- Cookies 只留在本機專用 Chrome profile，不序列化、不複製、不進 agent context。
 
 ## Playwright 流程狀態
 
 各流程的入口 URL、步驟、成功證據記錄在 `references/flow-*.md`，已以真實帳號驗證者蓋有 `last-verified` 時戳。
 
-## Browser Core v1
+## Browser Core v2：正常 Chrome + CDP
 
-Playwright flows now use an isolated per-platform profile lock, a URL + DOM
+Playwright 預設透過 CDP 連接使用者啟動的教育平台專用正常 Chrome；Google OAuth、
+MFA、CAPTCHA 都在 Skill detach 後由老師本人完成。Flows still use a URL + DOM
 authentication check, condition-based waits, run-state journals, classified
 selector failures, and local redacted diagnostics. A failed or ambiguous
 external write returns `resumeUrl` and must not be retried automatically.
+
+環境變數：`TW_EDU_CDP_URL` 可指定 endpoint；`TW_EDU_CHROME_PATH` 可指定 Chrome；
+只有非 Google 帳號的明確需求才可設定 `TW_EDU_BROWSER_MODE=playwright`。
 
 Run local checks with:
 
