@@ -1,41 +1,61 @@
 ---
 name: tw-wayground-skill
-description: Use when a teacher wants quiz content turned into a Wayground (formerly Quizizz) import-ready spreadsheet — 產生 Wayground 官方匯入試算表、匯入就緒報告。Triggers include quiz.json, Wayground, Quizizz, 匯入題目, 匯入試算表.
+description: Use when a teacher needs a source-traceable, audience-aligned Wayground spreadsheet import file, or needs to assess whether quiz JSON is ready for Wayground import.
 ---
 
-# tw-wayground-skill
+# Wayground 測驗匯入
 
-把結構化測驗（quiz.json）轉成 Wayground 官方匯入試算表，並附上匯入就緒報告，老師拿著檔案自行到 wayground.com 匯入、發布、指派。
+將已審核的測驗 JSON 轉為 Wayground（原 Quizizz）`.xlsx` 匯入檔。**先有來源、受測者、目標和命題藍圖，再產檔；匯入格式通過不代表題目教學品質已由系統判定。**
 
-## 首次使用
+## 必要工作流
 
-```bash
-cd <skill-dir> && npm install
+1. 蒐集並確認 assessment brief；缺來源、受測者、目標或藍圖時，停止產題與產檔。
+2. 依下列契約建立 `quiz.json`，使每題可回查教材與學習目標。
+3. 執行 `node scripts/build-xlsx.mjs quiz.json out.xlsx`。
+4. 先讀 `out.quality.json`；僅 `status: "ready"` 可交付。檢查 blockers、warnings、逐題追溯與 blueprint。
+5. 再讀 `out.readiness.json` 及 stdout warnings，處理平台題型、圖片、長度、選項與空格的匯入風險。
+6. 教師自行匯入未發布草稿、預覽並設定能見度；不可聲稱已自動發布或指派。
+
+## assessment v1 契約
+
+```json
+{
+  "title": "單元檢核",
+  "questions": [{
+    "type": "multiple_choice",
+    "prompt": "題幹",
+    "options": [{"text": "選項 A", "correct": true}, {"text": "選項 B", "correct": false}],
+    "explanation": "供教師複核的說明",
+    "sourceRefIds": ["src-1"], "objectiveIds": ["obj-1"],
+    "cognitiveLevel": "understand", "difficulty": "basic"
+  }],
+  "assessment": {
+    "version": 1,
+    "sources": [{"id": "src-1", "title": "教材名稱", "locator": "第 3 頁／段落"}],
+    "audience": {"gradeLevel": "國七", "proficiency": "基礎", "language": "zh-TW", "prerequisites": ["已學過…"]},
+    "objectives": [{"id": "obj-1", "text": "能…"}],
+    "purpose": "形成性檢核",
+    "blueprint": [{"objectiveId": "obj-1", "cognitiveLevel": "understand", "difficulty": "basic", "count": 1}]
+  }
+}
 ```
 
-只在 `node_modules/` 不存在時執行。
+`cognitiveLevel` 限 `remember`、`understand`、`apply`、`analyze`、`evaluate`、`create`；`difficulty` 限 `basic`、`developing`、`proficient`、`advanced`。每個來源須有 `id/title/locator`，受測者須有年級、程度、語言和至少一項先備能力；藍圖總題數及每一格實際題數都必須吻合。選擇題至少一個正解，單選題剛好一個。
 
-## 工作流程
+## Wayground 提醒
 
-1. **產生匯入檔（唯一步驟）**：
-   ```bash
-   node scripts/build-xlsx.mjs quiz.json out.xlsx
-   ```
-   輸出 JSON 含 `questionCount`、`warnings`、`readinessReportPath`（指向與 xlsx 同目錄的 `out.readiness.json`）。**warnings 一定要完整轉述給老師**，包含：跳過的題型、超過 5 選項被裁掉、時間被 snap 到官方檔位、非圖片媒體無法匯入、題幹/選項過長可能被截斷、填空題含多個空格標記。
-   ⚠️ 不要自己手刻轉換器或猜測範本格式：填空題答案寫入 Option 1..5（不是 Correct Answer 欄）、上限 5 選項、秒數只能是固定檔位，這些規則都已內建且經真實上傳驗證。
-   `readiness.json` 的 `perQuestion` 陣列列出每題的 ready/skipped 狀態與原因——上傳前建議老師先看過這份報告，取代原本「先匯入再看預覽」的步驟。
+- 映射題型為 `multiple_choice`、`multiple_select`、`true_false`、`fill_blank`、`short_answer`、`open_ended`、`poll`；其他題型會 skipped。選項最多五個。
+- 試算表只有 Image Link；非圖片媒體要在編輯器補建。多空格填空題會被提醒，因單列格式無法表達不同空格。
+- 匯入時：Create → 評估 → 匯入工作表／問題 → 選「試算表」分頁 → 上傳 xlsx。匯入後核對題目與能見度；勿直接發布。
 
-2. **上傳後，請老師在 Wayground 官網做的事**：登入 wayground.com → Create → 評估 → 匯入工作表/問題 → **切到「試算表」分頁**（預設「檔案文件」分頁不吃 xlsx）→ 上傳剛產生的 xlsx → 對照 warnings 核對跳過/截斷的題目 → 自行填 metadata（科目/年級/能見度，⚠️ 能見度預設「公開可見」會把測驗和答案公開，請確認）→ 發布 → 指派作業或開 Live。
+## 例外與限制
 
-## 規則
-
-- 每支腳本輸出單行 JSON：`{ok:true,...}` 或 `{ok:false,error,hint}`。
-- `warnings` 一定完整轉述；不支援的題型（matching/ordering/draw/word_cloud，官方匯入範本沒有對應欄位）一定要點名，提醒老師可在 Wayground 編輯器手動補建。
-- 這裡沒有任何瀏覽器/登入自動化——本 skill 只產生檔案，見下方「為什麼沒有瀏覽器自動化」。
+`--legacy` 會輸出 `legacy-unverified` quality report，不能作為命題品質證明。此工具不含 API、登入、瀏覽器自動化、發布或指派。
 
 ## 常見錯誤
 
 | 症狀 | 處理 |
 |---|---|
-| quiz.json 驗證失敗 | 對照 `scripts/lib/models.mjs` 的 Quiz schema 修正 |
-| `No questions could be mapped` | 所有題目型別都不被支援；檢查 quiz.json 的 `type` 欄位 |
+| `assessment-quality-blocked` | 補 assessment v1、題目追溯欄位與藍圖；不要把 legacy 當修正。 |
+| skipped／flagged | 先讀 readiness 的 `perQuestion` 和 warnings，再修正題型、選項、媒體或空格。 |
+| `explanation-missing` | 補教師複核與回饋用的解析；quality report 不會驗證學科真偽。 |

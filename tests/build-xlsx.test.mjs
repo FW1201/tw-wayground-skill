@@ -6,8 +6,9 @@ import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { buildWaygroundWorkbook, LONG_TEXT_WARN_CHARS } from "../scripts/build-xlsx.mjs";
+import { buildWaygroundWorkbook as rawBuildWaygroundWorkbook, LONG_TEXT_WARN_CHARS } from "../scripts/build-xlsx.mjs";
 import { Quiz } from "../scripts/lib/models.mjs";
+const buildWaygroundWorkbook = (quiz, outPath) => rawBuildWaygroundWorkbook(quiz, outPath, { legacy: true });
 
 function tmpXlsx() {
   return path.join(os.tmpdir(), `wg-test-${Date.now()}-${Math.random().toString(36).slice(2)}.xlsx`);

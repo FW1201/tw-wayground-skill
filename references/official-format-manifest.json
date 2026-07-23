@@ -1,0 +1,9 @@
+{
+  "platform": "Wayground",
+  "source": "https://help.wayground.com/support/solutions/articles/158000404696-create-an-assessment-quiz",
+  "retrieved": "2026-07-23",
+  "worksheet": "Quiz",
+  "headerRow": 1,
+  "columns": ["Question Text", "Question Type", "Option 1", "Option 2", "Option 3", "Option 4", "Option 5", "Correct Answer", "Time in seconds", "Image Link", "Answer explanation"],
+  "constraints": { "maxOptions": 5, "supportedTypes": ["Multiple Choice", "Checkbox", "Fill-in-the-Blank", "Open-Ended", "Poll"] }
+}

@@ -1,0 +1,38 @@
+{
+  "title": "水循環形成性檢核",
+  "language": "zh-TW",
+  "questions": [
+    {
+      "type": "multiple_choice",
+      "prompt": "太陽加熱海水後，水蒸發成水氣；這個過程稱為什麼？",
+      "options": [
+        { "text": "蒸發", "correct": true },
+        { "text": "凝結", "correct": false }
+      ],
+      "explanation": "蒸發是液態水受熱轉為水氣的過程。",
+      "sourceRefIds": ["src-water-01"],
+      "objectiveIds": ["obj-water-01"],
+      "cognitiveLevel": "understand",
+      "difficulty": "basic"
+    }
+  ],
+  "assessment": {
+    "version": 1,
+    "sources": [
+      { "id": "src-water-01", "title": "自然科水循環教材", "locator": "第 12 頁，第 2 段" }
+    ],
+    "audience": {
+      "gradeLevel": "國七",
+      "proficiency": "基礎",
+      "language": "zh-TW",
+      "prerequisites": ["能辨認液態水與水氣" ]
+    },
+    "objectives": [
+      { "id": "obj-water-01", "text": "能說明水循環中蒸發的意義。" }
+    ],
+    "purpose": "課後形成性檢核",
+    "blueprint": [
+      { "objectiveId": "obj-water-01", "cognitiveLevel": "understand", "difficulty": "basic", "count": 1 }
+    ]
+  }
+}
