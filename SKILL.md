@@ -1,6 +1,6 @@
 ---
 name: tw-wayground-skill
-description: Use when a teacher needs a source-traceable, audience-aligned Wayground spreadsheet import file, or needs to assess whether quiz JSON is ready for Wayground import.
+description: Use when a teacher needs a source-traceable, audience-aligned Wayground spreadsheet import file, needs to assess whether quiz JSON is ready for Wayground import, or needs a recorded, human-gated Wayground draft-import handoff with manual Google OAuth bootstrap.
 ---
 
 # Wayground 測驗匯入
@@ -48,9 +48,35 @@ description: Use when a teacher needs a source-traceable, audience-aligned Waygr
 - 試算表只有 Image Link；非圖片媒體要在編輯器補建。多空格填空題會被提醒，因單列格式無法表達不同空格。
 - 匯入時：Create → 評估 → 匯入工作表／問題 → 選「試算表」分頁 → 上傳 xlsx。匯入後核對題目與能見度；勿直接發布。
 
+### 簡報教材上傳（實測）
+
+在已登入的 `/admin` 頁面點選「上傳」，進入 `wayground.com/admin?tab=upload`。頁面提供「轉換你的文件進入互動資源」，可選「裝置」或 Google 雲端硬碟，並顯示檔案上限 50 MB、最多 100 頁；另可貼網站或 YouTube 連結。選取簡報後選「投影片」→「下一個」，確認檔名、投影片數與資源類型，再選教學目標並點「Create resource」。成功證據是進入 `/presentation/<id>/edit` 編輯器並回讀投影片數；不要把檔案選擇器開啟或顯示 `No file chosen` 當成已上傳成功。
+
+## Google OAuth 登入工作階段
+
+依 [google-oauth-handoff.md](references/google-oauth-handoff.md) 執行登入前置作業。Google OAuth 只能在使用者平常使用的正常 Chrome 個人檔案中由教師手動完成；不要用 Playwright、Chrome DevTools MCP 新開的自動化瀏覽器、嵌入式 WebView 或 Skill 代填 Email、密碼、MFA。登入完成後，工具才可接管同一個已登入工作階段（例如 localhost CDP）執行 Wayground 操作。
+
+若頁面停在 `accounts.google.com`、顯示「This browser or app may not be secure」、`signin/rejected` 或仍顯示「登陸註冊」，立即停止自動化；請教師回到正常 Chrome 完成登入，再重新執行工作階段前置檢查。不要用清除 Cookie、重試自動化登入或換固定座標來繞過 Google 風控。
+
+若正常 Chrome 回到 Wayground 公開首頁並顯示「登入／註冊」，走 [google-oauth-handoff.md](references/google-oauth-handoff.md) 的「正常 Chrome 帳戶提示分支」：教師在 Chrome 原生提示中選取正確帳戶並完成必要確認，工具等待回到 Wayground 後重新讀取頁面；只有看到 `/admin`、帳戶入口／頭像且不再看到「登入／註冊」才算登入成功。
+
+## 錄製後的草稿動作
+
+教師以 Record & Replay 提供可檢視錄製後，才可依 [recorded-action-handoff.md](references/recorded-action-handoff.md) 將 XLSX 匯入與未發布預覽接回工作流；沒有錄製時不可猜測網站操作。完成 Google OAuth 後，瀏覽器操作需使用同一個真人已登入的正常 Chrome／Computer Use 工作階段，採用語意化控制（按鈕、分頁、檔案名稱），不可把座標或錄製中的固定檔名當成通用腳本。
+
+執行錄製後流程時：
+
+1. 先確認 `quality.status=ready`，閱讀 `quality.blockers`、`quality.warnings`、`readiness.perQuestion` 與 `readiness.warnings`；任何未接受的風險都先停下來請教師判斷。
+2. 進入 Wayground 的建立評估流程，選「匯入工作表／問題」，切到「試算表」，再以檔案選擇器選取使用者明確指定的 `out.xlsx`。
+3. 按「繼續」後，核對題數、題幹、題型、選項、正解與解析；若預覽與 quality/readiness 報告不一致，停止，不修正或發布平台內容。
+4. 進入草稿編輯器後，依教師提供的 brief 核對標題、科目、年級、語言、教學目標與能見度；錄製中的「蒸散作用／科學／7年級／英語」只是示範值，不得固定套用。
+5. 在發布前停止並回報證據，交由教師決定是否發布、指派或 Live。不得點擊或聲稱完成「發布」「指派」「Live」「分享」或擴大能見度。
+
+若要走簡報教材分支：從 `/admin` 點「上傳」→「裝置」→選取教師指定的 PPT／PPTX／PDF，等待文件轉換→選「投影片」→「下一個」→選教學目標→「Create resource」。2026-07-28 實測 `CANARY-20260728-water-cycle.pptx` 成功建立 15 張投影片的編輯器草稿，URL 為 `/presentation/6a681d45b9b859b2c15d6099/edit`；只看到「發布」按鈕不代表已發布。
+
 ## 例外與限制
 
-`--legacy` 會輸出 `legacy-unverified` quality report，不能作為命題品質證明。此工具不含 API、登入、瀏覽器自動化、發布或指派。
+`--legacy` 會輸出 `legacy-unverified` quality report，不能作為命題品質證明。此工具不含 API、登入、瀏覽器自動登入、自動發布或自動指派；錄製後流程只是由教師明確授權的草稿匯入與預覽銜接。
 
 ## 常見錯誤
 

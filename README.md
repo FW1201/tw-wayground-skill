@@ -37,6 +37,16 @@ Quiz 需有 `title`、`questions[]`、`assessment.version: 1`。`assessment.sour
 
 教師操作：Wayground → Create → 評估 → 匯入工作表／問題 → 切到「試算表」分頁 → 上傳 `out.xlsx` → 在未發布草稿核對每題 → 審慎確認 metadata 與能見度後，再由教師決定發布、指派或 Live。不要將此工具描述成會代替教師執行平台操作。
 
+Wayground 另有簡報／文件教材入口：`/admin` → `上傳` → `裝置`（或 Google 雲端硬碟）→ 選取 PPT／PPTX／PDF → 選「投影片」→「下一個」→選教學目標→`Create resource`。成功判定是回到 `/presentation/<id>/edit` 並能核對投影片數；頁面目前顯示上限 50 MB、最多 100 頁。這與 XLSX 試算表匯入是兩條不同流程。2026-07-28 已成功建立 15 張投影片的未發布草稿，僅停在發布前。
+
+## 正常 Chrome 登入與錄製後銜接
+
+Google 登入必須由教師在平常使用的正常 Chrome 個人檔案中完成；不要讓自動化瀏覽器、嵌入式 WebView 或 Skill 代填 Email、密碼、MFA。若出現 `This browser or app may not be secure`、`signin/rejected` 或仍停在登入頁，回到正常 Chrome 完成登入後再繼續。Wayground 回到 `/admin`、顯示帳戶入口／頭像且不再顯示「登入／註冊」後，才算登入成功。
+
+收到可檢視的 Record & Replay 錄製後，才可用同一個已登入 Chrome 工作階段銜接 XLSX 匯入與草稿預覽；每次要重新讀取頁面，使用按鈕、分頁與檔案名稱等語意資訊，不固定座標、私人 quiz id 或錄製中的檔名。上傳前先確認 `quality.status=ready`，匯入預覽再核對題數、題幹、題型、選項、正解與解析。
+
+這個流程最多做到未發布草稿並回報證據；不會自動發布、指派、Live、分享或擴大能見度。實際匯入成功、草稿 URL、題數與平台發布結果必須分開描述，不能以本地測試或看到 Publish 按鈕代替平台寫入證據。完整停止條件見 [`references/google-oauth-handoff.md`](references/google-oauth-handoff.md) 與 [`references/recorded-action-handoff.md`](references/recorded-action-handoff.md)。
+
 ## 舊資料、安全與維護
 
 只有既有資料救援才用 `--legacy`：`node scripts/build-xlsx.mjs quiz.json out.xlsx --legacy`。它的 quality report 為 `legacy-unverified`，無來源、對象與藍圖驗證，不能當作一般交付。不要輸入學生可識別資料、平台帳密或 API key。
