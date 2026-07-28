@@ -2,7 +2,7 @@
 
 # tw-wayground-skill 使用手冊
 
-非官方、離線的 Wayground（原 Quizizz）試算表產生器。它將已審核的測驗 JSON 轉成 `.xlsx`、`.quality.json`、`.readiness.json`；不登入、不匯入、不發布、不指派，也不以格式檢查取代教師的學科審題。
+Wayground（原 Quizizz）教學資源 Skill。它將具來源追溯與命題藍圖的測驗 JSON 轉成 `.xlsx`、`.quality.json`、`.readiness.json`，並提供正常 Chrome 的試算表匯入、PPTX 簡報教材轉換、草稿核對與發布前停點。
 
 ## 事前條件
 
@@ -37,7 +37,7 @@ Quiz 需有 `title`、`questions[]`、`assessment.version: 1`。`assessment.sour
 
 教師操作：Wayground → Create → 評估 → 匯入工作表／問題 → 切到「試算表」分頁 → 上傳 `out.xlsx` → 在未發布草稿核對每題 → 審慎確認 metadata 與能見度後，再由教師決定發布、指派或 Live。不要將此工具描述成會代替教師執行平台操作。
 
-Wayground 另有簡報／文件教材入口：`/admin` → `上傳` → `裝置`（或 Google 雲端硬碟）→ 選取 PPT／PPTX／PDF → 選「投影片」→「下一個」→選教學目標→`Create resource`。成功判定是回到 `/presentation/<id>/edit` 並能核對投影片數；頁面目前顯示上限 50 MB、最多 100 頁。這與 XLSX 試算表匯入是兩條不同流程。2026-07-28 已成功建立 15 張投影片的未發布草稿，僅停在發布前。
+Wayground 另有簡報／文件教材入口：`/admin` → `上傳` → `裝置`（或 Google 雲端硬碟）→ 選取 PPT／PPTX／PDF → 選「投影片」→「下一個」→選教學目標→`Create resource`。成功判定是回到 `/presentation/<id>/edit` 並能核對投影片數；頁面目前顯示上限 50 MB、最多 100 頁。這與 XLSX 試算表匯入是兩條不同流程。
 
 ## 正常 Chrome 登入與錄製後銜接
 
