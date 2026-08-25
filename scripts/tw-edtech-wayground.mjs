@@ -7,7 +7,18 @@ import { validateAssessmentQuiz } from "./lib/assessment-quality.mjs";
 import { runEdtechCli } from "./lib/edtech-cli.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-await runEdtechCli({
+const needsProtectedRoster = async () => {
+  const [command, ...args] = process.argv.slice(2);
+  const action = args[args.indexOf("--action") + 1];
+  const rosterIndex = args.indexOf("--roster");
+  const roster = rosterIndex >= 0 ? args[rosterIndex + 1] : undefined;
+  const catalog = JSON.parse(await readFile(path.join(root, "capability-catalog.json"), "utf8"));
+  return ["plan", "run"].includes(command) && catalog.actions.find((item) => item.id === action)?.requiresStudentData && !roster;
+};
+if (await needsProtectedRoster()) {
+  console.log(JSON.stringify({ ok: false, error: "roster-required", hint: "此動作涉及學生資料；請提供已受保護且不納入 Git 的 --roster 檔案。", externalWriteAttempted: false }));
+  process.exitCode = 1;
+} else await runEdtechCli({
   platform: "wayground",
   root,
   validate: async (input) => {
