@@ -10,12 +10,15 @@ const emit = (payload) => { console.log(JSON.stringify(payload)); process.exitCo
 
 export async function guardStudentRosterPlan({ platform, root }) {
   const [command, ...args] = process.argv.slice(2);
-  if (!['plan', 'run'].includes(command)) return false;
   const action = value(args, 'action'); const resource = value(args, 'resource');
   const catalog = JSON.parse(await readFile(path.join(root, 'capability-catalog.json'), 'utf8'));
   const definition = catalog.actions.find((item) => item.id === action);
   if (!definition?.requiresStudentData) return false;
   const roster = value(args, 'roster');
+  if (!['plan', 'run'].includes(command)) {
+    if (roster && !path.basename(roster).endsWith('.roster.json')) { emit({ ok: false, error: 'roster-path-required', action, hint: '學生名單必須使用受 Git 忽略的 *.roster.json 檔案。', externalWriteAttempted: false }); return true; }
+    return false;
+  }
   if (!roster) { emit({ ok: false, error: 'roster-required', action, hint: '此動作涉及學生資料；請提供已受保護且不納入 Git 的 --roster 檔案。', externalWriteAttempted: false }); return true; }
   if (!path.basename(roster).endsWith('.roster.json')) { emit({ ok: false, error: 'roster-path-required', action, hint: '學生名單必須使用受 Git 忽略的 *.roster.json 檔案。', externalWriteAttempted: false }); return true; }
   let raw; let students;
