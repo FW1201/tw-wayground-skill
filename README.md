@@ -66,3 +66,13 @@ npm test
 ```
 
 測試不會登入或寫入平台。壓力情境與預期行為見 [skill-evaluations.md](references/skill-evaluations.md)。
+
+## CLI 控制與下一輪錄製
+
+```bash
+tw-edtech-wayground doctor
+tw-edtech-wayground validate --input quiz.json
+tw-edtech-wayground plan --action assessment.import --resource CANARY-assessment
+```
+
+請依序錄製教材庫盤點、Assessment／Presentation 匯入、編輯、發布、分享、Live、作業、班級同步、報告與刪除。每段使用 Canary 測試帳戶與一次性資源，完成後讀回名稱、題數、能見度與狀態；登入憑證、學生名單、成績、報告內容與分享 URL 不得進錄製。普通寫入需要 `--confirm-write`，高風險動作還要 `--confirm-plan` 與 `--confirm-impact`。

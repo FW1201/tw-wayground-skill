@@ -76,7 +76,7 @@ description: Use when a teacher needs a source-traceable, audience-aligned Waygr
 
 ## 例外與限制
 
-`--legacy` 會輸出 `legacy-unverified` quality report，不能作為命題品質證明。此工具不含 API、登入、瀏覽器自動登入、自動發布或自動指派；錄製後流程只是由教師明確授權的草稿匯入與預覽銜接。
+`--legacy` 會輸出 `legacy-unverified` quality report，不能作為命題品質證明。未有已審核 action map 前，此工具不含 API、登入、瀏覽器自動登入、發布或指派；錄製後流程只會在教師明確確認後啟用對應的已驗證動作。
 
 ## 常見錯誤
 
@@ -85,3 +85,14 @@ description: Use when a teacher needs a source-traceable, audience-aligned Waygr
 | `assessment-quality-blocked` | 補 assessment v1、題目追溯欄位與藍圖；不要把 legacy 當修正。 |
 | skipped／flagged | 先讀 readiness 的 `perQuestion` 和 warnings，再修正題型、選項、媒體或空格。 |
 | `explanation-missing` | 補教師複核與回饋用的解析；quality report 不會驗證學科真偽。 |
+
+## CLI 教學帳戶控制（錄製後啟用）
+
+`tw-edtech-wayground` 在既有 assessment quality gate 外，加入能力目錄、計畫確認與遮罩證據。先跑 `doctor`、`validate --input quiz.json`、`catalog scan`、`plan`；未有已審核的正常 Chrome Canary action map 時，`run` 一律回傳 `requires-recording`。
+
+```bash
+tw-edtech-wayground validate --input quiz.json
+tw-edtech-wayground plan --action assessment.import --resource CANARY-assessment
+```
+
+匯入／編輯需 `--confirm-write`；發布、分享、Live、作業、班級同步、報告與刪除需計畫確認碼與 `--confirm-impact`。讀取名單或報告時還需 `--confirm-student-data`，不得記錄姓名、email、作答或分享 URL。

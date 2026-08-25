@@ -1,10 +1,13 @@
 {
   "name": "tw-wayground-skill",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Agent skill: build a Wayground (formerly Quizizz) official import spreadsheet with an import-readiness report for Taiwanese K-12 teachers. No browser automation.",
   "type": "module",
   "license": "MIT",
   "private": true,
+  "bin": {
+    "tw-edtech-wayground": "scripts/tw-edtech-wayground.mjs"
+  },
   "scripts": {
     "test": "node --test tests/*.test.mjs"
   },

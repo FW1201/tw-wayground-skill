@@ -1,2 +1,4 @@
 node_modules/
 *.xlsx
+*.roster.json
+.tw-edtech-runs/
