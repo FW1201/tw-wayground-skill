@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { Quiz } from "./lib/models.mjs";
 import { validateAssessmentQuiz } from "./lib/assessment-quality.mjs";
 import { runEdtechCli } from "./lib/edtech-cli.mjs";
+import { guardStudentRosterPlan } from "./lib/student-roster-plan.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const needsProtectedRoster = async () => {
@@ -15,7 +16,9 @@ const needsProtectedRoster = async () => {
   const catalog = JSON.parse(await readFile(path.join(root, "capability-catalog.json"), "utf8"));
   return ["plan", "run"].includes(command) && catalog.actions.find((item) => item.id === action)?.requiresStudentData && !roster;
 };
-if (await needsProtectedRoster()) {
+if (await guardStudentRosterPlan({ platform: "wayground", root })) {
+  // The guard emitted a roster-bound plan or a fail-closed diagnostic.
+} else if (await needsProtectedRoster()) {
   console.log(JSON.stringify({ ok: false, error: "roster-required", hint: "此動作涉及學生資料；請提供已受保護且不納入 Git 的 --roster 檔案。", externalWriteAttempted: false }));
   process.exitCode = 1;
 } else await runEdtechCli({
