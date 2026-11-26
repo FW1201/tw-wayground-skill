@@ -27,3 +27,5 @@ Agent 提供 connector/MCP 時，根據本次任務檢查動作、參數、使�
 ## 專案安裝與升級
 
 在本 Skill 目錄執行 `node scripts/portable-core/install.mjs --agent codex --project <既有專案目錄>` 先做唯讀預覽；將 `codex` 換成 claude、antigravity、opencode。新增 `--apply --with-deps` 才實際複製及執行 `npm ci --ignore-scripts`。若目標已存在，預設拒絕覆蓋；使用 `--upgrade --apply --with-deps` 時先在暫存區安裝依賴，成功後將舊目錄移到專案 `.edtech-skill-backups/`，再替換新版本。回應提供 backup 路徑；依賴失敗時原版不變。備份可能包含使用者自訂檔，提交專案前請自行確認是否應加入忽略規則。此安裝器只處理專案目錄，不會設定全域 Agent 或聲稱自動觸發成功；請重啟／重新載入並實測。
+
+安裝診斷會針對此 Skill 檢查目前專案與所選 Agent 常見的全域目錄，列出存在狀態、package 版本及 `SKILL.md` 與執行中來源是否相同。多份同名 Skill 會提醒載入位置可能受 Agent、設定與工作目錄影響；入口一致不代表整個套件一致，也不代表已載入。無法讀取時回報 unknown，請以 Agent 新對話實際讀取的路徑核對。
