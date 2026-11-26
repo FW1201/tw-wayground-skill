@@ -1,0 +1,2 @@
+import {readFile} from 'node:fs/promises';import {validateLessonV1} from './lesson-v1.mjs';
+export async function runLessonCommand(args){const i=args.indexOf('--input');if(i<0||!args[i+1])return {ok:false,error:'usage',hint:'lesson --input <brief.json>'};try{const result=validateLessonV1(JSON.parse(await readFile(args[i+1],'utf8')));return {...result,externalWriteAttempted:false}}catch(e){return {ok:false,error:'invalid-brief',hint:String(e.message),externalWriteAttempted:false}}}

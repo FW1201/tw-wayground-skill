@@ -1,0 +1,4 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {validateLessonV1} from './lesson-v1.mjs';
+const valid=()=>({version:1,title:'方程式',grade:'國七',language:'zh-TW',devices:'每組一台',fallback:'紙本',durationMinutes:20,sources:[{id:'s',title:'教材',locator:'p.1'}],objectives:[{id:'o',text:'代入檢驗'}],activities:[{title:'平衡站',goal:'驗證等式',playerAction:'調整兩邊數量',feedback:'顯示兩邊重量',completion:'通過三關',evidence:'口述理由',minutes:20,sourceIds:['s'],objectiveIds:['o']}]});
+test('valid teaching brief has matching times and traceable goals',()=>assert.equal(validateLessonV1(valid()).ok,true));
+test('rejects missing references, duplicate ids, time mismatch and missing player action',()=>{let x=valid();x.sources.push({...x.sources[0]});x.activities[0].sourceIds=['unknown'];x.activities[0].playerAction='';x.activities[0].minutes=10;let r=validateLessonV1(x);assert.equal(r.ok,false);assert.equal(r.errors.length,4)});

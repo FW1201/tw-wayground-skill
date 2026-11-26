@@ -76,3 +76,13 @@ tw-edtech-wayground plan --action assessment.import --resource CANARY-assessment
 ```
 
 請依序錄製教材庫盤點、Assessment／Presentation 匯入、編輯、發布、分享、Live、作業、班級同步、報告與刪除。每段使用 Canary 測試帳戶與一次性資源，完成後讀回名稱、題數、能見度與狀態；登入憑證、學生名單、成績、報告內容與分享 URL 不得進錄製。普通寫入需要 `--confirm-write`，高風險動作還要 `--confirm-plan` 與 `--confirm-impact`。
+
+## 跨 Agent 安裝診斷
+
+安裝前執行 `node scripts/portable-core/agent-doctor.mjs --agent codex`，其他 Agent 可替換為 `claude`、`antigravity`、`opencode` 或 `other`。診斷結果中的 unknown 需在實際 Agent 與平台確認；詳見 [跨 Agent 指引](references/portable-integration.md)。核心只提供診斷和路由建議，不會自動安裝、登入或執行平台操作。
+
+### 專案範圍安裝
+
+執行 `node scripts/portable-core/install.mjs --agent codex --project <專案目錄>` 預覽；確認結果後加 `--apply`，將完整 Skill 複製到該 Agent 專案技能目錄。已有同名 Skill 時停止，絕不覆蓋；需要同時安裝套件時加 `--with-deps`，使用 `npm ci --ignore-scripts`；完成後重新載入 Agent 並檢查技能發現。安裝器不修改 MCP 設定或登入。
+
+使用 `tw-edtech-wayground runtime --inventory inventory.json` 將本次 Agent 發現的工具與替代能力送入 CLI，回報動作路由；此命令唯讀，不會替宿主呼叫 connector。工具可見不代表帳號權限已驗證。

@@ -4,6 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Quiz } from "./lib/models.mjs";
 import { validateAssessmentQuiz } from "./lib/assessment-quality.mjs";
+import { runLessonCommand } from "./portable-core/lesson-command.mjs";
+import { runRuntimeCommand } from "./portable-core/runtime-command.mjs";
 import { runEdtechCli } from "./lib/edtech-cli.mjs";
 import { guardStudentRosterPlan } from "./lib/student-roster-plan.mjs";
 
@@ -16,7 +18,15 @@ const needsProtectedRoster = async () => {
   const catalog = JSON.parse(await readFile(path.join(root, "capability-catalog.json"), "utf8"));
   return ["plan", "run"].includes(command) && catalog.actions.find((item) => item.id === action)?.requiresStudentData && !roster;
 };
-if (await guardStudentRosterPlan({ platform: "wayground", root })) {
+if (process.argv[2] === "lesson") {
+  const report = await runLessonCommand(process.argv.slice(3));
+  console.log(JSON.stringify(report));
+  if (!report.ok) process.exitCode = 1;
+} else if (process.argv[2] === "runtime") {
+  const report = await runRuntimeCommand("wayground", process.argv.slice(3));
+  console.log(JSON.stringify(report));
+  if (!report.ok) process.exitCode = 1;
+} else if (await guardStudentRosterPlan({ platform: "wayground", root })) {
   // The guard emitted a roster-bound plan or a fail-closed diagnostic.
 } else if (await needsProtectedRoster()) {
   console.log(JSON.stringify({ ok: false, error: "roster-required", hint: "此動作涉及學生資料；請提供已受保護且不納入 Git 的 --roster 檔案。", externalWriteAttempted: false }));

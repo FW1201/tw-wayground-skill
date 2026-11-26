@@ -1,7 +1,19 @@
 ---
 name: tw-wayground-skill
-description: Use when a teacher needs a source-traceable, audience-aligned Wayground spreadsheet import file, needs to assess whether quiz JSON is ready for Wayground import, or needs a recorded, human-gated Wayground draft-import handoff with manual Google OAuth bootstrap.
+description: Design and create Wayground assessments, flashcards, presentations, and classroom game workflows using available connectors, import files, and verified browser operations.
 ---
+
+## Codex connector 實作路徑
+
+在目前 Agent 工具清單中發現並直接使用平台 connector；先讀工具描述與實際 schema，不依 CLI 推測支援。Padlet connector 可建立白板與 Arcade 配對遊戲；Wayground connector 可建立選擇題與閃卡草稿。每次建立後讀回或以平台編輯頁核對，呈現資源連結和實際存取狀態；connector 能力與 REST CLI 的限制須分開描述。未在工具清單發現功能時，依既有匯入或 Computer Use 流程處理。
+
+使用平台特有模式時，先查閱 [模式與驗證指引](references/platform-modes.md)。以 [教學 brief 範例](assets/lesson-brief-v1.example.json) 定義年級、來源、目標、活動、時間和玩家回饋；用既有 CLI 的 `lesson --input <brief.json>` 檢查時間及來源關聯，結果不取代教師審查。
+
+## 跨 Agent 環境與工具發現
+
+首次安裝前及需要外部平台操作前，執行 `node scripts/portable-core/agent-doctor.mjs --agent codex`；可將 codex 換為 claude、antigravity、opencode 或 other。診斷不會讀出或測試金鑰；unknown 不是可用。依診斷提示與當前 Agent 工具清單檢查 connector/MCP、權限、瀏覽器與登入，不能由本機 CLI 是否存在推論工具可用。詳見 [跨 Agent 與模式指引](references/portable-integration.md)。
+
+連接器與 MCP 路徑僅在當前工具庫確認操作、權限與使用者需求後使用；使用具體工具前確認其參數及輸出。原有下方 CLI 與人工流程、品質檢查及外部寫入限制仍適用於原工具；不能宣稱未測試的工具路徑已完成。完成後讀回並區分草稿、發布及分享狀態。
 
 # Wayground 測驗匯入
 
@@ -14,7 +26,7 @@ description: Use when a teacher needs a source-traceable, audience-aligned Waygr
 3. 執行 `node scripts/build-xlsx.mjs quiz.json out.xlsx`。
 4. 先讀 `out.quality.json`；僅 `status: "ready"` 可交付。檢查 blockers、warnings、逐題追溯與 blueprint。
 5. 再讀 `out.readiness.json` 及 stdout warnings，處理平台題型、圖片、長度、選項與空格的匯入風險。
-6. 教師自行匯入未發布草稿、預覽並設定能見度；不可聲稱已自動發布或指派。
+6. 依實際可用的 connector 或登入介面建立、匯入並核對；結果必須區分草稿、發布與指派。
 
 ## assessment v1 契約
 

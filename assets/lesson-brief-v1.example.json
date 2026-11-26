@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "title": "方程式平衡站",
+  "grade": "國七",
+  "language": "zh-TW",
+  "devices": "每組一台裝置",
+  "fallback": "紙本天平圖與代入表",
+  "durationMinutes": 20,
+  "sources": [
+    {
+      "id": "s1",
+      "title": "教師示範教材",
+      "locator": "例題 x+3=7"
+    }
+  ],
+  "objectives": [
+    {
+      "id": "o1",
+      "text": "能以代入法驗證一元一次方程式的解"
+    }
+  ],
+  "activities": [
+    {
+      "title": "操作與檢驗",
+      "goal": "完成三個平衡挑戰",
+      "playerAction": "調整貨物數量並檢查兩側",
+      "feedback": "顯示兩側數值與重試提示",
+      "completion": "完成指定三個挑戰",
+      "evidence": "學生以算式說明代入過程",
+      "minutes": 20,
+      "sourceIds": [
+        "s1"
+      ],
+      "objectiveIds": [
+        "o1"
+      ]
+    }
+  ]
+}
