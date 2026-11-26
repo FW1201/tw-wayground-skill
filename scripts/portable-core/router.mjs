@@ -8,6 +8,7 @@ export function route({action, available=[]}) {
 }
 export function result({action,route,status,resource=null,warnings=[],evidence=[]}) {
  if(!['pending','completed','failed','unknown','partial'].includes(status)) throw Error('invalid status');
- if(status==='completed'&&evidence.length===0) throw Error('completed requires readback evidence');
+ if(!Array.isArray(evidence)||!Array.isArray(warnings)) throw Error('evidence and warnings must be arrays');
+ if(status==='completed'&&(!evidence.length||evidence.some(e=>e==null||typeof e==='string'&&!e.trim()))) throw Error('completed requires readback evidence');
  return {version:1,action,route,status,resource,warnings,evidence};
 }

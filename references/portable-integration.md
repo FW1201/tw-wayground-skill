@@ -16,8 +16,10 @@ Agent 提供 connector/MCP 時，根據本次任務檢查動作、參數、使�
 
 `connector-adapter.mjs` 提供 `resolveTool(action, toolNames)` 與 `executeConnector({action,input,toolNames,invoke})`。宿主必須注入本次實際發現的工具名稱和呼叫函式；Node 腳本本身不能存取 Codex 的工具物件。對應 Padlet 白板、貼文、Arcade 及 Wayground 測驗／閃卡；若宿主無注入能力，Agent 應依動作對應直接呼叫其可見 connector，不能假裝腳本已呼叫。
 
-執行結果 `submitted` 只表示工具已回覆，需平台讀回才能視為完成；呼叫逾時返回 `unknown`，先查目標而非重送。不同環境的 tool inventory、登入與授權需於每次執行重新檢查。
+執行結果 `submitted` 僅表示已收到明確成功訊號或 Wayground 文件定義的資源連結，需平台讀回才能視為完成；無法判讀的回應或呼叫逾時返回 `unknown`，先查目標而非重送。不同環境的 tool inventory、登入與授權需於每次執行重新檢查。
 
 ### 當前 Agent 工具盤點
 
 由正在執行的 Agent 讀取其實際工具清單，將無憑證的名稱與平台、動作組成 JSON，如 `{"platform":"padlet","action":"padlet.board.create","tools":["mcp__codex_apps__padlet_create_padlet"],"browser":"unknown","api":"unknown","cli":"unknown","manual":"available"}`，再執行 `node scripts/portable-core/diagnose-runtime.mjs inventory.json`。不得把登入資訊或帳號資料放入 inventory。工具被發現後，必須讀取當前 schema、核對連接器與瀏覽器帳號，並在本次操作後讀回。
+
+部分欄位／貼文未套用時回傳 `partial`；等待審核的貼文需提醒尚不可見。工具回應的連結或成功旗標不等於平台內容、分享權限已讀回。

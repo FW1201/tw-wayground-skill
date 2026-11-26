@@ -3,3 +3,6 @@ test('routing uses only observed action capability and safe order',()=>{let x=ro
 test('completed results require evidence',()=>{assert.throws(()=>result({status:'completed'}));assert.equal(result({status:'unknown'}).status,'unknown')});
 test('lesson checks game actions and time',()=>{assert.equal(validateLesson({}).ok,false);let x={title:'x',grade:'7',objectives:['x'],durationMinutes:40,sources:['x'],devices:'shared',activities:[{goal:'x',playerAction:'x',feedback:'x',completion:'x'}]};assert.equal(validateLesson(x).ok,true)});
 test('doctor never reveals credential and reports unknown runtime',()=>{let r=spawnSync(process.execPath,['agent-doctor.mjs','--agent','codex'],{cwd:new URL('.',import.meta.url),env:{...process.env,PADLET_API_KEY:'SENTINEL_SECRET'},encoding:'utf8'});assert.equal(r.status,0);assert.ok(!r.stdout.includes('SENTINEL_SECRET'));assert.equal(JSON.parse(r.stdout).connectors.status,'unknown')});
+
+
+test('completed results require an evidence array containing real entries',()=>{assert.throws(()=>result({action:'a',route:'manual',status:'completed',evidence:'not-an-array'}));assert.throws(()=>result({action:'a',route:'manual',status:'completed',evidence:['  ']}));assert.equal(result({action:'a',route:'manual',status:'completed',evidence:['visible readback']}).status,'completed')});

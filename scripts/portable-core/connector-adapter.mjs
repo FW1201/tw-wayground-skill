@@ -16,6 +16,11 @@ export function resolveTool(action, toolNames) {
   if(matches.length!==1)return {ok:false,error:matches.length?'ambiguous-tool':'tool-unavailable',action};
   return {ok:true,action,tool:matches[0],readback:spec.readback??null};
 }
+function hasDocumentedLink(action, payload) {
+  const key=action==='wayground.quiz.create'?'quizLink':action==='wayground.flashcards.create'?'flashcardsLink':null;
+  if(!key || typeof payload?.[key]!=='string')return false;
+  try {const u=new URL(payload[key]);return u.protocol==='https:' && (u.hostname==='wayground.com'||u.hostname.endsWith('.wayground.com')||u.hostname==='quizizz.com'||u.hostname.endsWith('.quizizz.com'));} catch{return false;}
+}
 export async function executeConnector({action,input,toolNames,invoke}) {
   const match=resolveTool(action,toolNames);
   if(!match.ok)return {...match,externalWriteAttempted:false};
@@ -31,9 +36,11 @@ export async function executeConnector({action,input,toolNames,invoke}) {
       try { payload=JSON.parse(content[0].text); } catch { /* text-only output is not assumed to be a structured success */ }
     }
     if(response?.isError===true||payload?.success===false||payload?.ok===false) return {ok:false,status:'failed',action,tool:match.tool,response};
-    if(response==null) return {ok:false,status:'unknown',action,tool:match.tool,error:'empty-response',hint:'Inspect target before retrying.'};
-    // A host may time out after a server commits a write. Do not retry without readback.
-    return {ok:true,status:'submitted',action,tool:match.tool,response,readback:match.readback,completed:false};
+    if(Array.isArray(payload?.not_applied) && payload.not_applied.length) return {ok:false,status:'partial',action,tool:match.tool,response,readback:match.readback,completed:false,hint:'Some requested fields or posts were not applied; inspect details and reconcile.'};
+    // Unstructured text or a schema-less object is not evidence of success.
+    // It may nevertheless have produced a write, so reconcile before retrying.
+    if(!payload || typeof payload !== 'object' || (payload.success !== true && payload.ok !== true && !hasDocumentedLink(action,payload))) return {ok:false,status:'unknown',action,tool:match.tool,error:'unconfirmed-response',hint:'Inspect the target before retrying; the host response did not explicitly confirm success.',response};
+    return {ok:true,status:'submitted',action,tool:match.tool,response,readback:match.readback,completed:false,...(Array.isArray(payload.awaiting_approval_post_ids)&&payload.awaiting_approval_post_ids.length?{warning:'Some posts await approval and may not yet be visible.'}:{})};
   } catch(error) {
     return {ok:false,status:'unknown',action,tool:match.tool,error:'invocation-outcome-unknown',hint:'Inspect the target before retrying; a write may have succeeded.'};
   }
