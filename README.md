@@ -86,3 +86,5 @@ tw-edtech-wayground plan --action assessment.import --resource CANARY-assessment
 執行 `node scripts/portable-core/install.mjs --agent codex --project <專案目錄>` 預覽；確認結果後加 `--apply`，將完整 Skill 複製到該 Agent 專案技能目錄。已有同名 Skill 時停止，絕不覆蓋；需要同時安裝套件時加 `--with-deps`，使用 `npm ci --ignore-scripts`；完成後重新載入 Agent 並檢查技能發現。安裝器不修改 MCP 設定或登入。
 
 使用 `tw-edtech-wayground runtime --inventory inventory.json` 將本次 Agent 發現的工具與替代能力送入 CLI，回報動作路由；此命令唯讀，不會替宿主呼叫 connector。工具可見不代表帳號權限已驗證。
+
+專案既有 Skill 的安全升級及回復指引見 [跨 Agent 整合](references/portable-integration.md#專案安裝與升級)。

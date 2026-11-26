@@ -23,3 +23,7 @@ Agent 提供 connector/MCP 時，根據本次任務檢查動作、參數、使�
 由正在執行的 Agent 讀取其實際工具清單，將無憑證的名稱與平台、動作組成 JSON，如 `{"platform":"padlet","action":"padlet.board.create","tools":["mcp__codex_apps__padlet_create_padlet"],"browser":"unknown","api":"unknown","cli":"unknown","manual":"available"}`，再執行 `node scripts/portable-core/diagnose-runtime.mjs inventory.json`。不得把登入資訊或帳號資料放入 inventory。工具被發現後，必須讀取當前 schema、核對連接器與瀏覽器帳號，並在本次操作後讀回。
 
 部分欄位／貼文未套用時回傳 `partial`；等待審核的貼文需提醒尚不可見。工具回應的連結或成功旗標不等於平台內容、分享權限已讀回。
+
+## 專案安裝與升級
+
+在本 Skill 目錄執行 `node scripts/portable-core/install.mjs --agent codex --project <既有專案目錄>` 先做唯讀預覽；將 `codex` 換成 claude、antigravity、opencode。新增 `--apply --with-deps` 才實際複製及執行 `npm ci --ignore-scripts`。若目標已存在，預設拒絕覆蓋；使用 `--upgrade --apply --with-deps` 時先在暫存區安裝依賴，成功後將舊目錄移到專案 `.edtech-skill-backups/`，再替換新版本。回應提供 backup 路徑；依賴失敗時原版不變。備份可能包含使用者自訂檔，提交專案前請自行確認是否應加入忽略規則。此安裝器只處理專案目錄，不會設定全域 Agent 或聲稱自動觸發成功；請重啟／重新載入並實測。
