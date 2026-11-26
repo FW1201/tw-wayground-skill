@@ -1,90 +1,97 @@
 <p align="center"><img src="assets/logo.png" width="88" alt="Wayground logo"></p>
 
-# tw-wayground-skill 使用手冊
+# tw-wayground-skill
 
-Wayground（原 Quizizz）教學資源 Skill。它將具來源追溯與命題藍圖的測驗 JSON 轉成 `.xlsx`、`.quality.json`、`.readiness.json`，並提供正常 Chrome 的試算表匯入、PPTX 簡報教材轉換、草稿核對與發布前停點。
+把教師教材與學習目標轉成 Wayground 評量、閃卡或 Presentation 的可用資料，提供匯入與教師審查指引。 目前版本：**0.5.0-rc.6（候選版）**。本專案為獨立教師工具，並非 Wayground 官方產品。
 
-## 事前條件
+## 能力與限制
 
-- Node.js 18 以上；先在本資料夾執行 `npm install`。
-- 可定位的教材來源、明確受測者（年級、程度、語言、先備能力）、學習目標、用途及藍圖。
-- 以 [assessment-brief.example.json](references/assessment-brief.example.json) 為起點，填入自己的資料後才命題。
+| 項目 | 本 Skill 協助 | 範圍與限制 |
+|---|---|---|
+| Assessment / Flashcards | 生成試算表，或由宿主使用可用 Wayground connector 建立測驗與閃卡 | 需檢查工具 schema、帳號、權限及可存取狀態 |
+| Presentation | 設計投影片順序、講解與互動題；提供文件及投影片匯入指引 | Connector 測驗工具不等於 Presentation 建立工具 |
+| Playground / Paper Mode | 依課堂目標規劃模式選擇、操作與紙卡使用 | 主持、紙卡、學生端與帳號可用性須自行確認 |
+| 格式保真 | 保留來源／目標追溯、題目及格式警告；超過支援的選項數或多重填空會跳過 | partial、skipped 與未支援媒體均須人工處理 |
 
-## 標準使用與報告
+## 從教材到平台
+
+1. 提供教材檔案或連結、適用年級、學習目標、課堂時間、設備與希望使用的模式。未能讀取的來源會標示，不根據檔名猜測。
+2. Agent 整理來源、目標、活動、操作、回饋與學習證據；使用 [教學 brief 範例](assets/lesson-brief-v1.example.json) 與 `lesson` 檢查來源 ID 和時間等結構。
+3. 根據實際可用的 connector／MCP、官方 API、CLI、已登入瀏覽器或人工匯入路徑準備內容；建立或上傳僅在使用者授權且工具可用時執行。
+4. 回報來源對應、產物、連結與已知狀態，列出跳過、格式轉換、媒體損失及需手動補入項目。逾時或結果不明時先核對現有資源，避免重複建立。
+5. **平台成果與最終驗收交由教師人工確認。** Agent 不自動試玩或模擬學生操作，也不將試玩列為交付條件；未經確認的內容不宣稱已驗收。分享、發布與指派依授權及當時工具能力處理。
+
+## 產生評量匯入檔
 
 ```bash
-npm install
 node scripts/build-xlsx.mjs quiz.json out.xlsx
 ```
 
-| 檔案 | 用途 |
-|---|---|
-| `out.xlsx` | 教師手動匯入的 Wayground 試算表。 |
-| `out.quality.json` | 只有 `status: "ready"` 可交付；含阻擋原因、warning、逐題追溯與藍圖摘要。 |
-| `out.readiness.json` | 匯入格式的 ready/skipped、媒體、長度與空格提醒。 |
+輸入格式與來源、年級、目標、命題藍圖見 [assessment 範例](references/assessment-brief.example.json)。檢查 `out.quality.json` 與 `out.readiness.json`，修正或向教師列出 skipped、warnings 和需手動補入的媒體。試算表與 Presentation／文件匯入是不同流程，見 [CLI 使用手冊](references/cli-guide.md) 和 [平台模式](references/platform-modes.md)。
 
-## assessment v1 輸入契約
+## 給 Agent 的指令範例
 
-Quiz 需有 `title`、`questions[]`、`assessment.version: 1`。`assessment.sources[]` 每筆都有 `id/title/locator`；`audience` 有 `gradeLevel/proficiency/language/prerequisites[]`；`objectives[]` 每筆有 `id/text`，另有 `purpose`；`blueprint[]` 每格有 `objectiveId/cognitiveLevel/difficulty/count`。每題有 `sourceRefIds[]`、`objectiveIds[]`、`cognitiveLevel`、`difficulty`。
+> 請依這份七年級教材設計 15 分鐘 Wayground 評量，保留每題來源、正解與解析，產生匯入檔及限制報告。
 
-認知層次：`remember`、`understand`、`apply`、`analyze`、`evaluate`、`create`；難度：`basic`、`developing`、`proficient`、`advanced`。所有題目必須能回查登錄的來源與目標，藍圖總數和每一格實際數量都要吻合。選擇題至少有一個正解，單選題剛好一個；`explanation` 雖非阻擋欄位，應提供給教師審核與回饋。
+教學 brief 範例可用下列命令檢查；結構通過不代表學科內容已經教師審核：
 
-缺資料、未知來源／目標、錯誤答案鍵或藍圖不符時會以 `assessment-quality-blocked` 停止。這不是可由「快要上課」覆寫的提醒，而是先補 brief 的信號。
+```bash
+node scripts/tw-edtech-wayground.mjs lesson --input assets/lesson-brief-v1.example.json
+```
 
-## Wayground 匯入提醒
+## 安裝與環境檢查
 
-支援 `multiple_choice`、`multiple_select`、`true_false`、`fill_blank`、`short_answer`、`open_ended`、`poll`，選項最多五個。只有圖片可放入 Image Link；其他媒體需在編輯器補加。超過五個選項或含多個填空標記的題目會跳過，避免遺失內容；部分產出回傳 partial 及 exit code 2。請完整查看 warnings。
+需要 Node.js 18 以上；平台操作另依所選路徑需要網路、平台權限與使用者登入。沒有 connector 不會阻止本地教材設計或現有支援的匯入檔產生。
 
-教師操作：Wayground → Create → 評估 → 匯入工作表／問題 → 切到「試算表」分頁 → 上傳 `out.xlsx` → 在未發布草稿核對每題 → 審慎確認 metadata 與能見度後，再由教師決定發布、指派或 Live。不要將此工具描述成會代替教師執行平台操作。
+```bash
+git clone https://github.com/FW1201/tw-wayground-skill.git
+cd tw-wayground-skill
+npm ci --ignore-scripts
+node scripts/portable-core/agent-doctor.mjs --agent codex
+```
 
-Wayground 另有簡報／文件教材入口：`/admin` → `上傳` → `裝置`（或 Google 雲端硬碟）→ 選取 PPT／PPTX／PDF → 選「投影片」→「下一個」→選教學目標→`Create resource`。成功判定是回到 `/presentation/<id>/edit` 並能核對投影片數；頁面目前顯示上限 50 MB、最多 100 頁。這與 XLSX 試算表匯入是兩條不同流程。
+`codex` 可改成 `claude`、`antigravity`、`opencode` 或 `other`。診斷檢查 Node、npm、作業系統、安裝位置與同名 Skill；它不會顯示憑證，也不會憑本機程序推定 connector、平台登入或權限可用。結果為 `unknown` 時，請在當前 Agent 中確認。
 
-## 正常 Chrome 登入與錄製後銜接
+### 安裝到 Agent 專案
 
-Google 登入必須由教師在平常使用的正常 Chrome 個人檔案中完成；不要讓自動化瀏覽器、嵌入式 WebView 或 Skill 代填 Email、密碼、MFA。若出現 `This browser or app may not be secure`、`signin/rejected` 或仍停在登入頁，回到正常 Chrome 完成登入後再繼續。Wayground 回到 `/admin`、顯示帳戶入口／頭像且不再顯示「登入／註冊」後，才算登入成功。
+先將下列 `<既有專案目錄>` 換成實際路徑；安裝器先執行診斷，預設只預覽：
 
-收到可檢視的 Record & Replay 錄製後，才可用同一個已登入 Chrome 工作階段銜接 XLSX 匯入與草稿預覽；每次要重新讀取頁面，使用按鈕、分頁與檔案名稱等語意資訊，不固定座標、私人 quiz id 或錄製中的檔名。上傳前先確認 `quality.status=ready`，匯入預覽再核對題數、題幹、題型、選項、正解與解析。
+```bash
+node scripts/portable-core/install.mjs --agent codex --project <既有專案目錄>
+node scripts/portable-core/install.mjs --agent codex --project <既有專案目錄> --apply --with-deps
+```
 
-這個流程最多做到未發布草稿並回報證據；不會自動發布、指派、Live、分享或擴大能見度。實際匯入成功、草稿 URL、題數與平台發布結果必須分開描述，不能以本地測試或看到 Publish 按鈕代替平台寫入證據。完整停止條件見 [`references/google-oauth-handoff.md`](references/google-oauth-handoff.md) 與 [`references/recorded-action-handoff.md`](references/recorded-action-handoff.md)。
+其他 Agent 將 `codex` 換成對應名稱。同名目標預設拒絕覆蓋；升級時先預覽 `--upgrade`，確認目標後使用 `--upgrade --apply --with-deps`。舊版會備份至專案 `.edtech-skill-backups/`，準備依賴失敗時保留原版。安裝器僅處理專案 Skill，不會設定全域 MCP、登入或保證自動觸發。重新載入 Agent，確認實際讀取的 Skill 路徑。詳細修復與回復見 [跨 Agent 整合](references/portable-integration.md)。
 
-## 舊資料、安全與維護
+## Connector、MCP 與替代路徑
 
-只有既有資料救援才用 `--legacy`：`node scripts/build-xlsx.mjs quiz.json out.xlsx --legacy`。它的 quality report 為 `legacy-unverified`，無來源、對象與藍圖驗證，不能當作一般交付。不要輸入學生可識別資料、平台帳密或 API key。
+本 Skill 優先評估當前宿主工具是否能完成指定任務，再依可用性選擇 connector、MCP、官方 API、CLI、Computer Use 或人工匯入。工具路由需要本次實際的能力與權限證據；CLI 本身不能直接呼叫 Codex 的內建 connector。呼叫失敗、逾時或回應不明時會與成功分開處理，不自動重送可能已寫入的動作。
 
-維護者需在平台範本有疑義時下載當日試算表範本，對照欄名、欄序、題型、選項、答案、秒數、圖片與解析欄，並用真人帳號匯入未發布草稿；未完成此流程，只能說程式結構測試通過。
+四平台另有獨立的 MCP Skills 套件，提供 Skill 入口及參考資源；它不附帶平台 connector，不代表宿主會自動啟用 Skill。MCP 套件並非本儲存庫的一部分；需取得其獨立發佈檔再配置。
 
-## 疑難排解與驗證
+## 相容性與驗證狀態
 
-| 現象 | 處理 |
-|---|---|
-| `assessment-quality-blocked` | 依 quality `blockers` 補 assessment 與題目追溯資料。 |
-| skipped／flagged | 讀 readiness `perQuestion` 和 warnings，再修題型、選項、媒體或填空。 |
-| 匯入預覽不同 | 以當日官方 template 重比對，先在草稿修正。 |
+| Agent | 目前證據 | 尚待確認 |
+|---|---|---|
+| Codex | 曾以明確指名在新對話讀取四個 Skill；一般 MCP 清單與讀取工具曾測試 | 自動觸發、各帳號及所有平台操作不保證 |
+| OpenCode | 曾在新對話測試 Padlet Skill 的明確指名與自然語句載入 | 本 Skill 各版本及 connector 路徑未逐一實測 |
+| Claude Code | 本機已安裝，當時 OAuth 工作階段過期 | 登入後載入、新對話與工具路徑待實測 |
+| Antigravity | 本機已安裝並確認 CLI 版本 | 技能載入及工具路徑待實測 |
+| Grok Bot | 已納入可攜式設計考量 | 雲端安裝、執行與 MCP 相容性未實測 |
+
+平台方案、介面、權限與工具可能變動。各模式已觀察範圍見 [平台模式](references/platform-modes.md) 與 [驗證紀錄](references/release-validation.md)；不把單次範例延伸成所有功能已驗證。
+
+## 維護與測試
 
 ```bash
 npm test
+git diff --check
 ```
 
-測試不會登入或寫入平台。壓力情境與預期行為見 [skill-evaluations.md](references/skill-evaluations.md)。
+自動化測試不登入、不代替平台成果的人工審查。詳細既有命令、格式與疑難排解見 [CLI 使用手冊](references/cli-guide.md)；平台與 API 使用均依授權及各平台當前條件。不要將密碼、API key、Cookie 或不必要的學生資料放進教材、日誌或版本庫。
 
-## CLI 控制與下一輪錄製
+## 四平台專案
 
-```bash
-tw-edtech-wayground doctor
-tw-edtech-wayground validate --input quiz.json
-tw-edtech-wayground plan --action assessment.import --resource CANARY-assessment
-```
+[Wordwall](https://github.com/FW1201/tw-wordwall-skill) · [Padlet](https://github.com/FW1201/tw-padlet-skill) · [Wayground](https://github.com/FW1201/tw-wayground-skill) · [Kahoot](https://github.com/FW1201/tw-kahoot-skill)
 
-請依序錄製教材庫盤點、Assessment／Presentation 匯入、編輯、發布、分享、Live、作業、班級同步、報告與刪除。每段使用 Canary 測試帳戶與一次性資源，完成後讀回名稱、題數、能見度與狀態；登入憑證、學生名單、成績、報告內容與分享 URL 不得進錄製。普通寫入需要 `--confirm-write`，高風險動作還要 `--confirm-plan` 與 `--confirm-impact`。
-
-## 跨 Agent 安裝診斷
-
-安裝前執行 `node scripts/portable-core/agent-doctor.mjs --agent codex`，其他 Agent 可替換為 `claude`、`antigravity`、`opencode` 或 `other`。診斷結果中的 unknown 需在實際 Agent 與平台確認；詳見 [跨 Agent 指引](references/portable-integration.md)。核心只提供診斷和路由建議，不會自動安裝、登入或執行平台操作。
-
-### 專案範圍安裝
-
-執行 `node scripts/portable-core/install.mjs --agent codex --project <專案目錄>` 預覽；確認結果後加 `--apply`，將完整 Skill 複製到該 Agent 專案技能目錄。已有同名 Skill 時停止，絕不覆蓋；需要同時安裝套件時加 `--with-deps`，使用 `npm ci --ignore-scripts`；完成後重新載入 Agent 並檢查技能發現。安裝器不修改 MCP 設定或登入。
-
-使用 `tw-edtech-wayground runtime --inventory inventory.json` 將本次 Agent 發現的工具與替代能力送入 CLI，回報動作路由；此命令唯讀，不會替宿主呼叫 connector。工具可見不代表帳號權限已驗證。
-
-專案既有 Skill 的安全升級及回復指引見 [跨 Agent 整合](references/portable-integration.md#專案安裝與升級)。
+MIT License
