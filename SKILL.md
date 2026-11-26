@@ -57,7 +57,7 @@ description: Design and create Wayground assessments, flashcards, presentations,
 ## Wayground 提醒
 
 - 映射題型為 `multiple_choice`、`multiple_select`、`true_false`、`fill_blank`、`short_answer`、`open_ended`、`poll`；其他題型會 skipped。選項最多五個。
-- 試算表只有 Image Link；非圖片媒體要在編輯器補建。多空格填空題會被提醒，因單列格式無法表達不同空格。
+- 試算表只有 Image Link；非圖片媒體要在編輯器補建。多空格填空題與超過五個選項的題目會跳過，因單列格式無法完整表達；逐題檢查 readiness。
 - 匯入時：Create → 評估 → 匯入工作表／問題 → 選「試算表」分頁 → 上傳 xlsx。匯入後核對題目與能見度；勿直接發布。
 
 ### 簡報教材上傳（實測）
@@ -108,3 +108,7 @@ tw-edtech-wayground plan --action assessment.import --resource CANARY-assessment
 ```
 
 匯入／編輯需 `--confirm-write`；發布、分享、Live、作業、班級同步、報告與刪除需計畫確認碼與 `--confirm-impact`。讀取名單或報告時還需 `--confirm-student-data`，不得記錄姓名、email、作答或分享 URL。
+
+## 匯入內容保真
+
+處理教材轉換前，讀取 [平台模式與核對](references/platform-modes.md)；完整回報跳過與限制，並逐題核對題幹、選項和正解。不得將部分轉換或未實際匯入的檔案描述為已建立的平台活動。

@@ -70,7 +70,7 @@ test("long question text triggers a truncation advisory", async () => {
   assert.ok(result.warnings.some((w) => w.includes("可能被 Wayground 匯入截斷")));
 });
 
-test("fill_blank with multiple blank markers warns that only one blank is representable", async () => {
+test("fill_blank with multiple blank markers is skipped instead of losing meaning", async () => {
   const quiz = Quiz.parse({
     title: "t",
     questions: [
@@ -78,6 +78,7 @@ test("fill_blank with multiple blank markers warns that only one blank is repres
     ],
   });
   const result = await buildWaygroundWorkbook(quiz, tmpXlsx());
+  assert.equal(result.questionCount, 0);
   assert.ok(result.warnings.some((w) => w.includes("無法表示多個空格")));
 });
 
@@ -91,3 +92,8 @@ test("fill_blank with a single blank marker does not trigger the multi-blank war
   const result = await buildWaygroundWorkbook(quiz, tmpXlsx());
   assert.ok(!result.warnings.some((w) => w.includes("無法表示多個空格")));
 });
+
+
+test("true_false preserves source labels and correct index",async()=>{const q=Quiz.parse({title:"t",questions:[{type:"true_false",prompt:"判斷",options:[{text:"錯誤",correct:false},{text:"正確",correct:true}]}]});const out=tmpXlsx();const result=await buildWaygroundWorkbook(q,out);const ExcelJS=(await import("exceljs")).default;const wb=new ExcelJS.Workbook();await wb.xlsx.readFile(out);const row=wb.worksheets[0].getRow(2);assert.equal(row.getCell(3).value,"錯誤");assert.equal(row.getCell(4).value,"正確");assert.equal(row.getCell(8).value,"2");assert.match(result.warnings.join(),/非原生/)});
+test("sixth option is not silently dropped",async()=>{const q=Quiz.parse({title:"t",questions:[{type:"multiple_choice",prompt:"p",options:[1,2,3,4,5,6].map(n=>({text:String(n),correct:n===6}))}]});const r=await buildWaygroundWorkbook(q,tmpXlsx());assert.equal(r.questionCount,0);assert.match(r.warnings.join(),/skipped/)});
+test("CLI legacy output reports partial when source items are skipped",async()=>{const {spawnSync}=await import("node:child_process");const cli=new URL("../scripts/build-xlsx.mjs",import.meta.url);const fixture=new URL("./fixtures/quiz.json",import.meta.url);const r=spawnSync(process.execPath,[cli.pathname,fixture.pathname,tmpXlsx(),"--legacy"],{encoding:"utf8"});assert.equal(r.status,2);assert.equal(JSON.parse(r.stdout).status,"partial")});

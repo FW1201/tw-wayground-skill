@@ -60,13 +60,8 @@ function mapQuestion(q, idx) {
 
   let options = q.options;
   if (q.type === "true_false") {
-    const correctIsTrue = q.options.some(
-      (o) => o.correct && /^(true|t|是|對|正確)$/i.test(o.text.trim()),
-    );
-    options = [
-      { text: "True", correct: correctIsTrue },
-      { text: "False", correct: !correctIsTrue },
-    ];
+    if (options.length !== 2 || options.filter(o => o.correct).length !== 1) return {ok:false,reason:"true_false requires exactly two source options and one correct answer — skipped."};
+    notes.push("是非題以保留原始文字的 Multiple Choice 匯入；非原生是非題型，請核對。");
   }
   // Fill-in-the-Blank does NOT use the "正確答案"/Correct Answer column.
   // Live-verified 2026-07-22 by real upload: Option 1 is required for every
@@ -82,19 +77,19 @@ function mapQuestion(q, idx) {
     q.type === "true_false" ||
     q.type === "poll";
 
-  const usable = options.slice(0, MAX_OPTIONS);
+  if (options.length > MAX_OPTIONS) return {ok:false,reason:`${options.length} options/accepted answers exceed ${MAX_OPTIONS}; skipped instead of dropping content.`};
+  const usable = options;
   if (isChoice && usable.length < 2 && q.type !== "poll") {
     return { ok: false, reason: "fewer than 2 options — skipped." };
   }
   if (q.type === "fill_blank" && usable.length < 1) {
     return { ok: false, reason: "fill_blank has no accepted answers — skipped." };
   }
-  if (options.length > MAX_OPTIONS) {
-    notes.push(`Wayground allows max ${MAX_OPTIONS} options — extras dropped.`);
-  }
+
 
   let correct = "";
   if (q.type === "multiple_choice" || q.type === "true_false") {
+    if (usable.filter(o=>o.correct).length !== 1) return {ok:false,reason:"single choice requires exactly one correct answer — skipped."};
     const i = usable.findIndex((o) => o.correct);
     if (i < 0) {
       return { ok: false, reason: "no correct option marked — skipped." };
@@ -141,7 +136,7 @@ function mapQuestion(q, idx) {
   if (q.type === "fill_blank") {
     const blankCount = (q.prompt.match(/_{2,}|\[blank\]/gi) ?? []).length;
     if (blankCount > 1) {
-      notes.push(`題幹含 ${blankCount} 個空格標記；Wayground 單列 xlsx 格式無法表示多個空格，匯入後僅會被視為單一填空題。`);
+      return {ok:false,reason:`題幹含 ${blankCount} 個空格標記；Wayground 單列 xlsx 格式無法表示多個空格 — skipped.`};
     }
   }
 
@@ -193,7 +188,7 @@ export async function buildWaygroundWorkbook(quiz, outPath, { legacy = false } =
     const r = mapQuestion(q, idx);
     if (!r.ok) {
       warnings.push(`Q${idx + 1}: ${r.reason}`);
-      perQuestion.push({ index: idx + 1, status: "skipped", type: q.type, reason: r.reason });
+      perQuestion.push({ index: idx + 1, status: "skipped", type: q.type, sourceRefIds: q.sourceRefIds ?? [], objectiveIds: q.objectiveIds ?? [], reason: r.reason });
       return;
     }
     r.notes.forEach((n) => warnings.push(`Q${idx + 1}: ${n}`));
@@ -201,6 +196,8 @@ export async function buildWaygroundWorkbook(quiz, outPath, { legacy = false } =
       index: idx + 1,
       status: "ready",
       type: q.type,
+      sourceRefIds: q.sourceRefIds ?? [],
+      objectiveIds: q.objectiveIds ?? [],
       notes: r.notes.length ? r.notes : undefined,
     });
 
@@ -282,8 +279,10 @@ if (isMain) {
       console.log(JSON.stringify({ ok: false, error: "assessment-quality-blocked", quality, hint: "請補齊 assessment brief，或明確使用 --legacy 產出未驗證檔案。" }));
       process.exit(1);
     }
-    const result = await buildWaygroundWorkbook(quiz, output, { quality });
-    console.log(JSON.stringify({ ok: true, ...result, title: quiz.title }));
+    const result = await buildWaygroundWorkbook(quiz, output, { legacy });
+    const complete = result.questionCount === quiz.questions.length && result.questionCount > 0;
+    console.log(JSON.stringify({ ok: complete, status: complete ? "generated-review-required" : "partial", ...result, title: quiz.title }));
+    if (!complete) process.exitCode = 2;
   } catch (err) {
     console.log(
       JSON.stringify({

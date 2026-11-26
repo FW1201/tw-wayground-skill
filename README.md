@@ -33,7 +33,7 @@ Quiz 需有 `title`、`questions[]`、`assessment.version: 1`。`assessment.sour
 
 ## Wayground 匯入提醒
 
-支援 `multiple_choice`、`multiple_select`、`true_false`、`fill_blank`、`short_answer`、`open_ended`、`poll`，選項最多五個。只有圖片可放入 Image Link；其他媒體需在編輯器補加。多個填空標記無法由單列格式完整表達。請完整查看 warnings。
+支援 `multiple_choice`、`multiple_select`、`true_false`、`fill_blank`、`short_answer`、`open_ended`、`poll`，選項最多五個。只有圖片可放入 Image Link；其他媒體需在編輯器補加。超過五個選項或含多個填空標記的題目會跳過，避免遺失內容；部分產出回傳 partial 及 exit code 2。請完整查看 warnings。
 
 教師操作：Wayground → Create → 評估 → 匯入工作表／問題 → 切到「試算表」分頁 → 上傳 `out.xlsx` → 在未發布草稿核對每題 → 審慎確認 metadata 與能見度後，再由教師決定發布、指派或 Live。不要將此工具描述成會代替教師執行平台操作。
 
