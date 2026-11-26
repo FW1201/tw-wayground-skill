@@ -3,6 +3,11 @@ name: tw-wayground-skill
 description: Design and create Wayground assessments, flashcards, presentations, and classroom game workflows using available connectors, import files, and verified browser operations.
 ---
 
+## 教材對接與人工驗收（優先適用）
+
+將來源、年級、學習目標、課堂時間和平台模式對應至可匯入欄位，保留題幹、選項、正解、解析及來源；匯入格式不支援的內容應留在交接資料，列出截斷、略過、轉型與需手動補入項目。先檢查產出及來源對應，使用可用 connector、MCP、API 或已登入介面建立草稿，並如實回報工具回應、資源連結、狀態與不確定處。提供教師人工審查清單，包含來源與事實、年級與目標、題目答案、媒體、格式損失及分享權限；平台呈現與最終驗收由教師確認。本 Skill 不自動試玩或模擬學生操作，不以遊戲機制或試玩作為交付必要條件；未經人工確認不得聲稱已完成最終驗收。下文的「核對」指產出準備與交接，平台成品的確認由教師執行；必要的工具回應與寫入狀態檢查仍保留。
+
+
 ## Codex connector 實作路徑
 
 在目前 Agent 工具清單中發現並直接使用平台 connector；先讀工具描述與實際 schema，不依 CLI 推測支援。Padlet connector 可建立白板與 Arcade 配對遊戲；Wayground connector 可建立選擇題與閃卡草稿。每次建立後讀回或以平台編輯頁核對，呈現資源連結和實際存取狀態；connector 能力與 REST CLI 的限制須分開描述。未在工具清單發現功能時，依既有匯入或 Computer Use 流程處理。
